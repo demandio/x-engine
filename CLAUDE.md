@@ -39,7 +39,7 @@ When Dakota says: **"Run the Reply Engine"** (or any variation), execute the ful
 
 **Mike's Slack user ID:** U02BJAWG9 (filter for his messages when scanning channels)
 
-**Default signal period:** Last 24 hours unless Dakota specifies otherwise.
+**Default signal period:** Last 24 hours for Slack signals. Last 72 hours (default) / 7 days (hard cap) for X reply targets. All X post timestamps must be Snowflake-validated (see scout.md). Dakota can override these windows per run.
 
 ### Slack-to-X Pipeline (On-Demand)
 

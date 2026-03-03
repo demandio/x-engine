@@ -2,7 +2,7 @@
 
 **Purpose:** Collect 30-50 candidate posts from the X ecosystem that Mike could reply to. Be aggressive in collection, ruthless in the next stage (scoring).
 
-**Dependencies:** Load `grounding/individual/mike-quoc-v2.md` for semantic territory boundaries. Reference `prompts/shared/x-ecosystem-setup.md` for tracked accounts and keywords.
+**Dependencies:** Load `grounding/individual/mike-quoc-v2.md` for semantic territory boundaries. Reference `prompts/shared/x-ecosystem-setup.md` for tracked accounts and keywords. Reference `prompts/shared/sensitivity-screen.md` for the three-tier sensitivity classification (GREEN / YELLOW / RED).
 
 **Output:** A structured candidate list ready for Stage 2 processing via `prompts/reply-engine/scoring.md`.
 
@@ -48,7 +48,23 @@ Not every post from a target account is worth replying to. A good reply target h
 
 **A Gap in the Replies:** Scan the existing replies. Is there something nobody has said yet that Mike's experience qualifies him to say? If the reply section already covered Mike's angle, skip it.
 
-**Freshness:** Posted within the last 12 hours is the target. Prioritize posts from the last 6 hours. Posts 12-24 hours old are last-resort backfill only - use them if the fresh pool has fewer than 20 candidates. **Hard cutoff: 24 hours. Do not collect any post older than 24 hours regardless of engagement or virality.** Reply visibility decays fast. Yesterday's conversation is dead.
+**Freshness:** Prioritize posts from the last 24 hours. Posts 24-72 hours old are strong candidates if the conversation is still active. Posts 3-7 days old are backfill - use them if the fresh pool has fewer than 20 candidates. **Hard cutoff: 7 days. Do not collect any post older than 7 days regardless of engagement or virality.**
+
+**Timestamp validation (MANDATORY):** Every candidate's publish date MUST be verified using X's Snowflake ID decoder. Extract the status ID from the post URL and decode:
+```python
+python3 -c "
+import datetime
+status_id = STATUS_ID_HERE
+timestamp_ms = (status_id >> 22) + 1288834974657
+dt = datetime.datetime.fromtimestamp(timestamp_ms / 1000, tz=datetime.timezone.utc)
+print(f'Published: {dt.strftime(\"%Y-%m-%d %H:%M UTC\")}')
+hours_ago = (datetime.datetime.now(datetime.timezone.utc) - dt).total_seconds() / 3600
+print(f'Age: {hours_ago:.0f} hours ({hours_ago/24:.1f} days)')
+"
+```
+WebSearch cannot reliably filter X posts by recency. It returns topically relevant results regardless of when they were published. The Snowflake decoder is the ONLY reliable way to verify a post's actual publication date. Do not trust "posted X hours ago" from WebSearch snippets. Do not trust date strings in search results. Decode the Snowflake ID. Every time. No exceptions.
+
+**Kill any post that decodes to older than 7 days.** Note the decoded timestamp in the candidate output.
 
 **Reply Visibility Potential:** The post is not yet so flooded with replies that Mike's would be buried. Ideal: 5-50 existing replies. Above 100 replies, Mike's reply needs to be exceptionally sharp to get visibility.
 
@@ -80,8 +96,8 @@ Before running territory-specific searches, discover what is actually trending i
 ```
 Zeitgeist discovery searches (run these first):
 - "AI" site:x.com (past 12 hours, sort by engagement) - broad sweep for today's dominant stories
-- "agents" OR "AI agents" site:x.com (past 12 hours) - what's the agent conversation today specifically
-- "AI announcement" OR "AI launch" OR "AI release" site:x.com (past 12 hours) - breaking product/model news
+- "agents" OR "AI agents" site:x.com (past 7 days) - what's the agent conversation today specifically
+- "AI announcement" OR "AI launch" OR "AI release" site:x.com (past 7 days) - breaking product/model news
 - Check trending topics related to AI/tech if available
 ```
 
@@ -95,18 +111,18 @@ Now run territory-specific searches. Use a mix of the static baseline queries AN
 
 **Baseline queries (run all):**
 ```
-- "AI agents production" OR "agents in production" site:x.com (past 24 hours)
-- "AI commerce" OR "AI shopping" OR "agentic commerce" site:x.com (past 24 hours)
-- "agent verification" OR "agent trust" OR "AI trust" site:x.com (past 24 hours)
-- "AI infrastructure" OR "AI operations" site:x.com (past 24 hours)
-- "agent reliability" OR "agent errors" OR "AI hallucination" site:x.com (past 24 hours)
+- "AI agents production" OR "agents in production" site:x.com (past 7 days)
+- "AI commerce" OR "AI shopping" OR "agentic commerce" site:x.com (past 7 days)
+- "agent verification" OR "agent trust" OR "AI trust" site:x.com (past 7 days)
+- "AI infrastructure" OR "AI operations" site:x.com (past 7 days)
+- "agent reliability" OR "agent errors" OR "AI hallucination" site:x.com (past 7 days)
 ```
 
 **Reactive queries (generate 3-5 based on Stages A and B):**
 Take the specific topics, people, products, or events from Stages A and B and build targeted searches. Examples:
-- If a major model dropped today: "[model name]" site:x.com (past 12 hours)
-- If Mike reacted to a specific company's announcement in Slack: "[company] AI" site:x.com (past 12 hours)
-- If a viral thread is happening around agent failures: "[specific topic from the thread]" site:x.com (past 12 hours)
+- If a major model dropped today: "[model name]" site:x.com (past 7 days)
+- If Mike reacted to a specific company's announcement in Slack: "[company] AI" site:x.com (past 7 days)
+- If a viral thread is happening around agent failures: "[specific topic from the thread]" site:x.com (past 7 days)
 
 Do not reuse yesterday's reactive queries. They must be fresh every run.
 
@@ -115,7 +131,7 @@ Do not reuse yesterday's reactive queries. They must be fresh every run.
 Reference the account tracking list from `prompts/shared/x-ecosystem-setup.md`. Check the most active accounts for recent posts via WebSearch:
 
 ```
-- from:@[handle] site:x.com (past 24 hours) - for Tier 1 tracked accounts only
+- from:@[handle] site:x.com (past 7 days) - for Tier 1 tracked accounts only
 - Look for posts with high engagement (>50 replies) from tracked accounts
 ```
 
@@ -147,7 +163,7 @@ Structure all collected targets into a single document:
 ```
 ## REPLY TARGET CANDIDATES - [Date]
 
-**Scouting period:** Last 24 hours (prioritizing last 12 hours)
+**Scouting period:** Last 7 days (prioritizing last 72 hours, all timestamps Snowflake-validated)
 **Dedup check:** [X] posts excluded from previous briefs (list URLs excluded)
 **Sources used:** [List which search patterns, Slack channels, and tracked accounts produced signal]
 
@@ -160,14 +176,16 @@ Structure all collected targets into a single document:
 ### Candidate 1
 **Post URL:** [Direct link to the tweet - REQUIRED. If no URL can be confirmed, mark as UNVERIFIED and note why.]
 **Post Author:** @[handle] ([follower count])
-**Post Date:** [YYYY-MM-DD HH:MM UTC - as precise as possible. If only approximate, note "(approx)"]
-**Post Age:** [X hours ago at time of scouting]
+**Post Date:** [YYYY-MM-DD HH:MM UTC - decoded via Snowflake ID. REQUIRED. No approximations.]
+**Post Age:** [X hours / X.X days ago at time of scouting - computed from Snowflake decode]
+**Snowflake Status ID:** [The numeric status ID used for timestamp decode]
 **Post Text:** [Full text of the original post]
 **Post Engagement:** [Likes, replies, reposts, quotes - approximate]
 **Reply Section Status:** [Number of existing replies, quality of conversation]
 **Topic Area:** [Which specific sub-territory this maps to - NOT just "AI Commerce" but the specific angle within it]
 **Source:** [How we found this - which Stage (A/B/C/D) and specific query or channel]
 **Initial Angle:** [1-2 sentences: what could Mike add that nobody else is saying? Must be specific to THIS post's sub-territory. Do not default to verification unless the post is about verification.]
+**Sensitivity Tier:** [GREEN / YELLOW / RED - per `prompts/shared/sensitivity-screen.md`. When in doubt, tier up. Include a 1-sentence reason for YELLOW or RED.]
 
 ### Candidate 2
 [Same structure]
@@ -184,7 +202,7 @@ Structure all collected targets into a single document:
 - Territory baseline: [X] candidates from baseline queries
 - Tracked accounts: [X] candidates from [Y] accounts
 **Sub-territory distribution:** [Count how many candidates map to each sub-territory. Flag if more than 40% map to any single sub-territory - that indicates the search was too narrow.]
-**Freshness distribution:** [X] under 6 hours, [X] 6-12 hours, [X] 12-24 hours
+**Freshness distribution:** [X] under 24 hours, [X] 24-72 hours, [X] 3-7 days (all Snowflake-validated)
 ```
 
 ---

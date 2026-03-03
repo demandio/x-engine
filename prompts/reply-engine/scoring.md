@@ -2,7 +2,7 @@
 
 **Purpose:** Take raw reply target candidates from Stage 1 (scout.md output), score each on 6 dimensions, rank, cut, and output the top 10-15 targets for Stage 3 (drafter.md).
 
-**Dependencies:** Load `grounding/individual/mike-quoc-v2.md` and `grounding/universal-grounding.md` before scoring. Every score must map to Mike's semantic territory, voice, and operational authority.
+**Dependencies:** Load `grounding/individual/mike-quoc-v2.md` and `grounding/universal-grounding.md` before scoring. Every score must map to Mike's semantic territory, voice, and operational authority. Reference `prompts/shared/sensitivity-screen.md` for the three-tier editorial sensitivity classification.
 
 **Input:** Structured candidate list from `prompts/reply-engine/scout.md`.
 
@@ -48,30 +48,40 @@ Is there space for Mike to add something valuable?
 
 ### Dimension 3: Account Quality (Weight: 1x)
 
-Is this the right account to engage with?
+Is this the right account to engage with - and is THIS SPECIFIC POST generating real engagement?
 
 | Score | Criteria |
 |-------|----------|
-| 9-10 | 25K-200K followers, active AI/tech audience, posts generate substantive reply threads, audience overlaps with Mike's target |
-| 7-8 | 10K-500K range, relevant topic, decent engagement, audience reasonably aligned |
-| 5-6 | Either too small (<15K) or too large (>300K), audience partially aligned, engagement inconsistent |
-| 1-4 | Wrong audience entirely, dead comment sections, or reply section too crowded for visibility |
+| 9-10 | 25K-200K followers, active AI/tech audience, posts generate substantive reply threads, audience overlaps with Mike's target. **This specific post** has replies that are substantive (multi-sentence, building on each other) - not just emoji reactions or one-word agreement. |
+| 7-8 | 10K-500K range, relevant topic, decent engagement, audience reasonably aligned. This post has some substantive replies mixed with lighter engagement. |
+| 5-6 | Either too small (<15K) or too large (>300K), audience partially aligned, engagement inconsistent. **Or:** follower count is in range but this specific post has a dead or low-quality comment section (mostly "great take!" or emoji-only replies). |
+| 1-4 | Wrong audience entirely, dead comment sections, or reply section too crowded for visibility. **Or:** high-follower account where engagement is bot-heavy, spam-heavy, or purely performative. |
 
 **Scoring physics:** The goal is not just visibility - it is visibility with the RIGHT people. A substantive reply on a 50K-follower AI founder's post is worth more than a reply on a 1M-follower tech influencer's post where Mike's comment drowns in noise.
 
+**Engagement validation (new):** Do not score Account Quality based on follower count alone. A 100K-follower account with dead comment sections scores lower than a 30K-follower account with active, substantive reply threads. Check the SPECIFIC POST's reply quality:
+- Are replies multi-sentence and building on the original argument? (Good)
+- Are people replying to each other's replies, creating conversation threads? (Very good)
+- Are the replies mostly "100%", "this", emoji, or single-sentence agreement? (Bad - low-value comment section means Mike's reply gets less visibility and engagement)
+- Is the reply section dominated by bots, spam, or self-promotional replies? (Bad - Mike's reply drowns in noise regardless of the account's follower count)
+
+When available, note the engagement quality in the scoring output. This is a signal for the drafter - a post with a high-quality reply section may warrant a longer, more substantive reply because the audience is engaged. A post with a low-quality reply section benefits from a shorter, punchier reply that stands out.
+
 ### Dimension 4: Post Freshness (Weight: 1x)
 
-How fresh is this conversation? Note: The scout enforces a hard 24-hour cutoff. Posts older than 24 hours should not reach scoring. If one does, score it 1-2 and flag the scout for review.
+How fresh is this conversation? All timestamps MUST be Snowflake-validated before scoring. The scout enforces a hard 7-day cutoff and provides decoded timestamps for every candidate.
 
 | Score | Criteria |
 |-------|----------|
-| 9-10 | Posted within 2 hours. Conversation just starting. Mike's reply will be near the top. |
-| 7-8 | Posted within 6 hours. Conversation active but not saturated. |
-| 5-6 | Posted within 12 hours. Conversation winding down but still visible. |
-| 3-4 | Posted 12-24 hours ago. Late entry. Only if the conversation is still unusually active. These are backfill candidates - prioritize fresher targets. |
-| 1-2 | Over 24 hours. Should not reach scoring under normal operation. If present, score low and flag. |
+| 9-10 | Posted within 12 hours. Conversation just starting. Mike's reply will be near the top. Maximum visibility window. |
+| 7-8 | Posted within 24 hours. Conversation active. Mike's reply lands in the growth window. |
+| 5-6 | Posted 24-72 hours ago. Conversation may still be active. Check reply section - if new replies are still coming in, conversation is alive. Score 6 if active, 5 if slowing. |
+| 3-4 | Posted 3-7 days ago. Late entry. Only viable if the conversation is still generating new replies or if a news event has reignited the topic. These are backfill candidates - prioritize fresher targets. |
+| 1-2 | Over 7 days. Should not reach scoring under normal operation. If present, score 1 and flag the scout for review. |
 
-**Scoring physics:** Reply visibility decays fast. A reply posted 1 hour after the original gets 10-50x more impressions than one posted 12 hours later (EMPIRICALLY OBSERVED). Freshness is a hard constraint for reply strategy.
+**Scoring physics:** Reply visibility decays with age, but the decay curve is not linear. A post at 48 hours with an active reply section can have better visibility than a post at 6 hours with a dead comment section. The key signal is whether new replies are still arriving - that indicates the algorithm is still surfacing the post. Fresher is better, but conversation activity matters more than raw age within the 7-day window.
+
+**Snowflake validation:** The scout provides exact decoded timestamps for every candidate. If a candidate arrives without a Snowflake-decoded timestamp, do not score it - return it to the scout for validation.
 
 ### Dimension 5: Reply Visibility (Weight: 1x)
 
@@ -143,6 +153,8 @@ For each surviving target, output:
 **Suggested Angle:** [1-2 sentences: specifically what Mike should say and why his experience qualifies him. The angle must be specific to THIS post's sub-territory. Do not default to verification/trust unless the post is specifically about verification/trust. If the post is about agent economics, the angle is about agent economics. If it's about infrastructure, the angle is about infrastructure.]
 
 **Reply Pattern:** [Which comment pattern fits best: Reframe / Binary Reduction / Contextual Wedge / Builder's Aside / Short Punch / Contrarian Redirect. Note: The drafter enforces a max of 2 uses per pattern per brief. Vary pattern suggestions across targets when multiple patterns would work.]
+
+**Sensitivity Tier:** [GREEN / YELLOW / RED - carried from scout output. If the scorer disagrees with the scout's tier assignment, override with reason. The sensitivity tier is a parallel track to the numerical score - a RED target can score 70/80 and still require Mike's explicit opt-in to engage.]
 ```
 
 After all targets, output the Scouting Quality Report:

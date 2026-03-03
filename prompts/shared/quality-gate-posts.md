@@ -34,7 +34,7 @@ Read only the first two lines. Can a scrolling reader immediately tell:
   4. The Counter: "[Common belief] is [wrong/backwards]."
   5. The Direct Address: "If you're [doing X], [thing you need to know]."
 
-### GATE 2 - THE GIFT TEST
+### GATE 2 - THE GIFT TEST (Enhanced for Posts)
 
 What specific thing does the reader walk away with? Complete this sentence:
 "After reading, the reader can now ___ that they could not before."
@@ -48,8 +48,17 @@ The gift must be one of:
 - A counterintuitive reframe of something they assumed
 - Actionable advice they can use immediately
 
-- **PASS:** The gift is clear and concrete. Name it.
-- **FAIL:** The post is observation or commentary without reader value. Name what is missing.
+**Depth requirement (posts only - does not apply to replies):**
+An original post on Mike's timeline carries more weight than a reply in someone else's thread. A reply can be 2 sentences and deliver value as one voice in a conversation. A post is Mike's voice unprompted - it represents his thinking, not his reaction. Posts must carry framework-level depth.
+
+**Depth scoring:**
+- **Framework-level gift (strong):** The reader gets a mental model, decision framework, or structural insight they can apply across multiple situations. Example: "Context exhaustion is a storage problem, not a model problem" gives the reader a new diagnostic lens for every context issue they encounter.
+- **Observation-level gift (weak for posts):** The reader gets a single-use insight or agrees with a well-stated opinion. Example: "Claude's WebUI went down again" is an observation, not a framework. If the post stops at observation, it needs to either (a) elevate to a framework or (b) be held as reply ammunition instead.
+
+The Gift Test for posts passes only with a framework-level gift. Observation-level gifts pass for replies but FAIL for posts. If a post delivers only an observation-level gift, the fix is usually: ask "what general principle does this specific observation reveal?" and rewrite to lead with the principle.
+
+- **PASS:** The gift is clear, concrete, and framework-level. Name it and explain why it's reusable beyond this one situation.
+- **FAIL:** The post is observation or commentary without reader value, OR the gift is real but observation-level (single-use, not reusable). Name what is missing or how to elevate.
 
 ### GATE 3 - THE VOICE TEST
 

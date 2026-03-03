@@ -2,7 +2,7 @@
 
 **Purpose:** Score a flagged Slack message to determine if it should become a public X post. Not every internal message is X-worthy. This engine filters.
 
-**Dependencies:** Load `grounding/individual/mike-quoc-v2.md` before scoring. Every score must map to Mike's semantic territory and the v2 content formula.
+**Dependencies:** Load `grounding/individual/mike-quoc-v2.md` before scoring. Every score must map to Mike's semantic territory and the v2 content formula. Reference `prompts/shared/sensitivity-screen.md` for the three-tier editorial sensitivity classification (GREEN / YELLOW / RED).
 
 **Input:** A flagged Slack message from Mike, provided by Dakota with channel and context.
 
@@ -145,6 +145,9 @@ Maximum possible: 80
 
 ### Sensitivity Flags
 [If Sensitivity Risk scored below 7, list specific items that need redaction in the transform stage. If 7+: "Clean - no flags."]
+
+### Editorial Sensitivity Tier
+[GREEN / YELLOW / RED - per `prompts/shared/sensitivity-screen.md`. This is separate from the IP sensitivity score above. A message can score 9/10 on Sensitivity Risk (no IP leakage) but still be YELLOW or RED editorially (e.g., commentary on a platform outage, layoff takes, competitor analysis). Include a 1-sentence reason for YELLOW or RED. For YELLOW: Dakota reviews framing before Mike posts. For RED: skip unless Mike explicitly opts in.]
 ```
 
 ---
