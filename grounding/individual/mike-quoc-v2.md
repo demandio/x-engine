@@ -1,0 +1,1 @@
+/Users/dakotanunley/Desktop/ghost-engine/grounding/individual/mike-quoc-v2.md
