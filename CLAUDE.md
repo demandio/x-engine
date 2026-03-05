@@ -25,7 +25,7 @@ Files 1 and 2 are symlinked from the Ghost Engine. They are the single source of
 
 When Dakota says: **"Run the Reply Engine"** (or any variation), execute the full 4-stage pipeline:
 
-1. **Scout** - Read `prompts/reply-engine/scout.md`. Collect 30-50 candidate posts from X using WebSearch and Slack context (via Slack MCP).
+1. **Scout** - Read `prompts/reply-engine/scout.md`. Collect 30-50 candidate posts from X using X Twitter MCP (primary), WebSearch (fallback), and Slack context (via Slack MCP).
 2. **Score** - Read `prompts/reply-engine/scoring.md`. Score each candidate on 6 weighted dimensions. Hard cutoff at 48/80. Surface top 10-15.
 3. **Draft** - Read `prompts/reply-engine/drafter.md`. Draft one reply per surviving target in Mike's voice. Run each through `prompts/shared/quality-gate-replies.md`.
 4. **Deliver** - Format output using `templates/reply-targets-daily.md`. Two-part structure: Part 1 (Scouting provenance for Dakota), Part 2 (Targets for Mike).

@@ -57,7 +57,7 @@ Reply drafts must be written in Mike's comment voice: The Diagnostic Peer. Insid
 
 ### Stage 1: Scout
 
-Read `prompts/reply-engine/scout.md`. Collect 30-50 candidate posts from the X ecosystem using WebSearch, Slack context from all primary channels (via Slack MCP: #ai-news, #productai, #ai-agents, #ai-dev, #ai-prompting), and tracked accounts.
+Read `prompts/reply-engine/scout.md`. Collect 30-50 candidate posts from the X ecosystem using X Twitter MCP (primary), WebSearch (fallback), Slack context from all primary channels (via Slack MCP: #ai-news, #productai, #ai-agents, #ai-dev, #ai-prompting), and tracked accounts.
 
 **Quality Gate: Stage 1 to Stage 2**
 - [ ] At least 20 candidate posts collected
@@ -119,7 +119,7 @@ Run the Reply Engine for Mike Quoc. Scout today's reply targets, score them, dra
 The agent handles everything from there:
 
 1. **Signal period** defaults to the last 24 hours.
-2. **Scouting** runs automatically via WebSearch and Slack MCP.
+2. **Scouting** runs automatically via X Twitter MCP (primary), WebSearch (fallback), and Slack MCP.
 3. **Scoring** runs automatically using the 6-dimension engine.
 4. **Drafting** runs automatically with quality gate checks.
 5. **Delivery** formats and outputs the brief.

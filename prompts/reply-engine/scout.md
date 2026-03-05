@@ -62,7 +62,9 @@ hours_ago = (datetime.datetime.now(datetime.timezone.utc) - dt).total_seconds() 
 print(f'Age: {hours_ago:.0f} hours ({hours_ago/24:.1f} days)')
 "
 ```
-WebSearch cannot reliably filter X posts by recency. It returns topically relevant results regardless of when they were published. The Snowflake decoder is the ONLY reliable way to verify a post's actual publication date. Do not trust "posted X hours ago" from WebSearch snippets. Do not trust date strings in search results. Decode the Snowflake ID. Every time. No exceptions.
+**Timestamp validation applies to ALL sources - including X API results.** The Snowflake decoder is the single source of truth for publication date. Do not trust relative timestamps from any source ("posted X hours ago"). Decode the Snowflake ID. Every time. No exceptions.
+
+**Note on WebSearch fallback:** If the X Twitter MCP is unavailable and WebSearch is used as a fallback, be aware that WebSearch cannot reliably filter X posts by recency. It returns topically relevant results regardless of when they were published. The Snowflake decoder becomes even more critical in fallback mode.
 
 **Kill any post that decodes to older than 7 days.** Note the decoded timestamp in the candidate output.
 
@@ -75,13 +77,15 @@ WebSearch cannot reliably filter X posts by recency. It returns topically releva
 Every data point about a candidate must be labeled with its confidence level. The system cannot silently guess about data it does not have.
 
 **Two confidence levels:**
-- **VERIFIED:** Data retrieved directly from X API (when available). Follower counts, engagement metrics, and post text are exact.
-- **ESTIMATED:** Data inferred from WebSearch snippets. Follower counts are approximate (~200K+), engagement metrics are rough, and post text may be truncated.
+- **VERIFIED:** Data retrieved directly from X Twitter MCP (the primary data source). Follower counts, engagement metrics, and post text are exact.
+- **ESTIMATED:** Data inferred from WebSearch snippets (fallback only - used when X Twitter MCP is unavailable or returns no results for a query). Follower counts are approximate (~200K+), engagement metrics are rough, and post text may be truncated.
+
+**Default posture:** With X Twitter MCP connected, most data should be VERIFIED. ESTIMATED data should only appear when the MCP is down, rate-limited, or when a specific post/account cannot be retrieved via API.
 
 **Rules:**
 - Always label follower counts: `@handle (24.3K followers, VERIFIED)` or `@handle (~200K+ followers, ESTIMATED)`
 - Always label engagement metrics: `47 replies (VERIFIED)` or `~45 replies (ESTIMATED)`
-- If post text is truncated by WebSearch, mark it: `**Post Text:** [text...] [TRUNCATED - full text not available via WebSearch]`
+- If post text is truncated (rare with API, common with WebSearch fallback), mark it: `**Post Text:** [text...] [TRUNCATED - full text not available]`
 - If the full post text cannot be retrieved, flag it in the output. The scorer applies a confidence penalty for ESTIMATED data, and the drafter needs to know if it's working with partial information.
 
 **Why this matters:** The scoring engine and drafter make decisions based on this data. A reply drafted against a truncated post risks arguing a straw man. A score based on estimated follower counts may over- or under-weight Account Quality. Honest labeling lets Dakota and Mike make informed calls.
@@ -111,11 +115,19 @@ Filter for Mike's messages (user ID: U02BJAWG9). Note: other team members' share
 
 Before running territory-specific searches, discover what is actually trending in the AI conversation on X today. This prevents the scout from fishing in the same static pond every day.
 
+**Primary method (X Twitter MCP):**
+Use `search_tweets` to run zeitgeist discovery queries:
 ```
-Zeitgeist discovery searches (run these first):
-- "AI" site:x.com (past 12 hours, sort by engagement) - broad sweep for today's dominant stories
-- "agents" OR "AI agents" site:x.com (past 7 days) - what's the agent conversation today specifically
-- "AI announcement" OR "AI launch" OR "AI release" site:x.com (past 7 days) - breaking product/model news
+- "AI" (past 12 hours, sort by engagement) - broad sweep for today's dominant stories
+- "agents" OR "AI agents" (past 7 days) - what's the agent conversation today specifically
+- "AI announcement" OR "AI launch" OR "AI release" (past 7 days) - breaking product/model news
+```
+
+**Fallback method (WebSearch - use only if X Twitter MCP is unavailable or rate-limited):**
+```
+- "AI" site:x.com (past 12 hours, sort by engagement)
+- "agents" OR "AI agents" site:x.com (past 7 days)
+- "AI announcement" OR "AI launch" OR "AI release" site:x.com (past 7 days)
 - Check trending topics related to AI/tech if available
 ```
 
@@ -127,33 +139,37 @@ From these results, identify 3-5 dominant stories or conversations happening on 
 
 Now run territory-specific searches. Use a mix of the static baseline queries AND reactive queries informed by Stages A and B.
 
-**Baseline queries (run all):**
+**Baseline queries (run all via X Twitter MCP `search_tweets`):**
 ```
-- "AI agents production" OR "agents in production" site:x.com (past 7 days)
-- "AI commerce" OR "AI shopping" OR "agentic commerce" site:x.com (past 7 days)
-- "agent verification" OR "agent trust" OR "AI trust" site:x.com (past 7 days)
-- "AI infrastructure" OR "AI operations" site:x.com (past 7 days)
-- "agent reliability" OR "agent errors" OR "AI hallucination" site:x.com (past 7 days)
+- "AI agents production" OR "agents in production" (past 7 days)
+- "AI commerce" OR "AI shopping" OR "agentic commerce" (past 7 days)
+- "agent verification" OR "agent trust" OR "AI trust" (past 7 days)
+- "AI infrastructure" OR "AI operations" (past 7 days)
+- "agent reliability" OR "agent errors" OR "AI hallucination" (past 7 days)
 ```
+
+**Fallback:** If X Twitter MCP is unavailable, append `site:x.com` to each query and run via WebSearch. Label all results as ESTIMATED.
 
 **Reactive queries (generate 3-5 based on Stages A and B):**
 Take the specific topics, people, products, or events from Stages A and B and build targeted searches. Examples:
-- If a major model dropped today: "[model name]" site:x.com (past 7 days)
-- If Mike reacted to a specific company's announcement in Slack: "[company] AI" site:x.com (past 7 days)
-- If a viral thread is happening around agent failures: "[specific topic from the thread]" site:x.com (past 7 days)
+- If a major model dropped today: "[model name]" via `search_tweets` (past 7 days)
+- If Mike reacted to a specific company's announcement in Slack: "[company] AI" via `search_tweets` (past 7 days)
+- If a viral thread is happening around agent failures: "[specific topic from the thread]" via `search_tweets` (past 7 days)
 
 Do not reuse yesterday's reactive queries. They must be fresh every run.
 
 ### Stage D: Tracked Accounts (Supplemental)
 
-Reference the account tracking list from `prompts/shared/x-ecosystem-setup.md`. Check the most active accounts for recent posts via WebSearch:
+Reference the account tracking list from `prompts/shared/x-ecosystem-setup.md`. Check the most active accounts for recent posts via X Twitter MCP:
 
 ```
-- from:@[handle] site:x.com (past 7 days) - for Tier 1 tracked accounts only
+- from:[handle] (past 7 days) via search_tweets - for Tier 1 tracked accounts only
 - Look for posts with high engagement (>50 replies) from tracked accounts
 ```
 
-This is a supplement, not a primary source. WebSearch catches trending conversations that tracked accounts may not be driving.
+**Fallback:** If X Twitter MCP is unavailable, use `from:@[handle] site:x.com (past 7 days)` via WebSearch.
+
+This is a supplement, not a primary source. The API and keyword searches catch trending conversations that tracked accounts may not be driving.
 
 ---
 
@@ -229,9 +245,10 @@ Structure all collected targets into a single document:
 ## Fallback Protocol
 
 If any source is unavailable:
-- **WebSearch down:** Ask Dakota for manual input of trending X topics and notable posts.
+- **X Twitter MCP down or rate-limited:** Fall back to WebSearch with `site:x.com` queries. Label ALL data from WebSearch as ESTIMATED. Note the fallback in the scouting report header so Dakota and the scoring engine know the data confidence baseline is lower for this run.
+- **Both X Twitter MCP and WebSearch down:** Ask Dakota for manual input of trending X topics and notable posts.
 - **Slack MCP down:** Ask Dakota to paste relevant Slack highlights from today.
-- **Tracked accounts not accessible:** Rely on WebSearch and Slack context. The tracked account list supplements; it is not the primary source.
+- **Tracked accounts not accessible:** Rely on X Twitter MCP keyword searches and Slack context. The tracked account list supplements; it is not the primary source.
 
 Never skip a source without asking Dakota first. Never fail silently.
 

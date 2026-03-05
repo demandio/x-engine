@@ -24,7 +24,8 @@
 ## Candidate Inventory
 
 Total candidates collected: [X]
-Sources: [WebSearch queries used, Slack channels checked, tracked accounts reviewed]
+Sources: [X Twitter MCP queries used, WebSearch fallback queries (if any), Slack channels checked, tracked accounts reviewed]
+Data confidence baseline: [VERIFIED (X Twitter MCP available) / MIXED (partial fallback to WebSearch) / ESTIMATED (full WebSearch fallback)]
 
 ### Passing Targets (48+ / 80)
 

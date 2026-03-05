@@ -7,7 +7,7 @@
 **Dependencies:**
 - Load `grounding/individual/mike-quoc-v2.md` for semantic territory boundaries and core axioms (Layer 1 Bedrock).
 - Slack MCP access for Mike's message history (user ID: U02BJAWG9).
-- WebSearch for current X ecosystem zeitgeist.
+- X Twitter MCP for current X ecosystem zeitgeist (primary). WebSearch as fallback if MCP is unavailable.
 
 **Output:** `output/thematic-context.md` - a structured document mapping Mike's active thematic currents.
 
@@ -70,7 +70,14 @@ Read all collected messages and identify thematic clusters. A cluster is a topic
 
 For each thematic cluster, search the current X ecosystem to answer: **Is the world talking about this right now?**
 
-Run targeted WebSearch queries for each cluster's core topic on X:
+Run targeted queries for each cluster's core topic on X:
+
+**Primary method (X Twitter MCP):**
+```
+search_tweets: "[cluster topic keywords]" (past 30 days)
+```
+
+**Fallback method (WebSearch - use only if X Twitter MCP is unavailable):**
 ```
 "[cluster topic keywords]" site:x.com (past 30 days)
 ```

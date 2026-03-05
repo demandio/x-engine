@@ -123,7 +123,7 @@ Maximum possible: 80
 
 ## Data Confidence Adjustment
 
-The scout labels every data point as VERIFIED (from API) or ESTIMATED (from WebSearch). Apply the following adjustments:
+The scout labels every data point as VERIFIED (from X Twitter MCP) or ESTIMATED (from WebSearch fallback). Apply the following adjustments:
 
 - **All data VERIFIED:** No adjustment. Score as normal.
 - **Follower count or engagement ESTIMATED:** Apply a -2 total score penalty. Note in output: "Score adjusted -2 for estimated data."
@@ -134,7 +134,7 @@ These penalties do not change dimension scores. They are applied to the total sc
 
 In the output, add after the score line:
 ```
-**Data Confidence:** [FULL (all data verified) / PARTIAL (some data estimated) / LOW (post text truncated + data estimated)]
+**Data Confidence:** [VERIFIED (all data from X Twitter MCP) / MIXED (some data from WebSearch fallback) / ESTIMATED (post text truncated + data estimated)]
 **Confidence Adjustments:** [List any penalties applied, or "None"]
 ```
 
