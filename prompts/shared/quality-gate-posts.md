@@ -2,7 +2,7 @@
 
 **Purpose:** A thorough quality check for Slack-to-X transformed posts. Posts get more scrutiny than replies because they represent Mike's original voice on his timeline.
 
-**Source:** Built from Social Post Linter Prompt 7 (Full Pipeline) and Social Post Playbook Phase 4 (Post-Draft Linting Checklist). All 5 gates preserved.
+**Source:** Built from Social Post Linter Prompt 7 (Full Pipeline) and Social Post Playbook Phase 4 (Post-Draft Linting Checklist). Original 5 gates preserved + Gate 6 (Outside-In) + Gate 7 (Outsider Legibility).
 
 **Input:** A transformed X post and the original Slack message it came from.
 
@@ -102,6 +102,25 @@ If FAIL: The opening must be rewritten to lead with the reader's world. Common f
 
 The reader's problem is the product. Mike's experience is the proof. Never reverse the order.
 
+### GATE 7 - THE OUTSIDER LEGIBILITY TEST
+
+Read this post as if you have never heard of Demand.io, SimplyCodes, Product.ai, or any of Mike's companies. You know the AI/tech space. You follow AI builders. But you have zero context about Mike's specific products, team, or internal language.
+
+Does every sentence still make sense? Does every example still land?
+
+Specifically check for:
+- **Product-specific shorthand:** References to products, features, or services that only make sense if you know what the company builds (e.g., "codes that actually work" only makes sense if you know SimplyCodes is a coupon code platform)
+- **Inside-baseball examples:** Operational details that assume knowledge of Mike's business model, customer base, or tech stack
+- **Jargon that reads as generic:** Terms that have a specific meaning inside the company but sound vague or confusing externally (e.g., "harness" is fine in AI agent context, but "our harness" without context is insider language)
+- **Implied context gaps:** Sentences where you need to know something about Mike's companies to understand why the claim matters or why Mike is the right person to make it
+
+- **PASS:** A stranger in the AI/tech builder space would understand every word, find the post valuable, and want to follow Mike based on the insight alone - without needing to know who he is or what he builds. Company-specific examples, if present, include enough context for an outsider to parse them (e.g., "In coupon commerce, codes that actually work..." vs. just "codes that actually work").
+- **FAIL:** Any sentence requires knowledge of Mike's specific products, internal terminology, or company context to interpret correctly. Name the specific phrase or example that fails and suggest one of two fixes:
+  - **(a) Add context:** Insert 2-5 words that give the outsider what they need. "Codes that actually work" becomes "In coupon commerce, the verification layer that confirms codes actually work..." This preserves the specific example while making it universally parseable.
+  - **(b) Universalize:** Replace the company-specific example with a universal one that any AI builder would recognize. This is the nuclear option - use it only when adding context would make the sentence clunky.
+
+**Calibration note:** This gate is a light touch, not a sanitizer. The goal is not to strip all specificity from Mike's posts - specificity is what makes them valuable. The goal is to ensure that specificity is accessible. A post about "agent-driven commerce verification" is specific AND universally parseable. A post about "what we shipped last week" is specific but insider-only.
+
 ---
 
 ## Output Format
@@ -113,6 +132,7 @@ GATE 3 (Voice): [PASS/FAIL] - [specific line-level fixes if needed]
 GATE 4 (Throughline): [PASS/FAIL] - [the one sentence]
 GATE 5 (Follow): [PASS/FAIL] - [what works or what is missing]
 GATE 6 (Outside-In): [PASS/FAIL] - [what the subject of the first sentence is]
+GATE 7 (Outsider Legibility): [PASS/FAIL] - [any insider-only phrases flagged, or "Clean"]
 
 VERDICT: [PASS (score 7+/10) / REVISE (score 4-6/10) / KILL (score 1-3/10)]
 SCORE: [X/10]

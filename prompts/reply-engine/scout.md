@@ -70,6 +70,24 @@ WebSearch cannot reliably filter X posts by recency. It returns topically releva
 
 ---
 
+## Data Confidence Protocol
+
+Every data point about a candidate must be labeled with its confidence level. The system cannot silently guess about data it does not have.
+
+**Two confidence levels:**
+- **VERIFIED:** Data retrieved directly from X API (when available). Follower counts, engagement metrics, and post text are exact.
+- **ESTIMATED:** Data inferred from WebSearch snippets. Follower counts are approximate (~200K+), engagement metrics are rough, and post text may be truncated.
+
+**Rules:**
+- Always label follower counts: `@handle (24.3K followers, VERIFIED)` or `@handle (~200K+ followers, ESTIMATED)`
+- Always label engagement metrics: `47 replies (VERIFIED)` or `~45 replies (ESTIMATED)`
+- If post text is truncated by WebSearch, mark it: `**Post Text:** [text...] [TRUNCATED - full text not available via WebSearch]`
+- If the full post text cannot be retrieved, flag it in the output. The scorer applies a confidence penalty for ESTIMATED data, and the drafter needs to know if it's working with partial information.
+
+**Why this matters:** The scoring engine and drafter make decisions based on this data. A reply drafted against a truncated post risks arguing a straw man. A score based on estimated follower counts may over- or under-weight Account Quality. Honest labeling lets Dakota and Mike make informed calls.
+
+---
+
 ## Scouting Method (Execute in This Order)
 
 The order matters. Each stage informs the next.
@@ -175,12 +193,13 @@ Structure all collected targets into a single document:
 
 ### Candidate 1
 **Post URL:** [Direct link to the tweet - REQUIRED. If no URL can be confirmed, mark as UNVERIFIED and note why.]
-**Post Author:** @[handle] ([follower count])
+**Post Author:** @[handle] ([follower count], [VERIFIED / ESTIMATED])
 **Post Date:** [YYYY-MM-DD HH:MM UTC - decoded via Snowflake ID. REQUIRED. No approximations.]
 **Post Age:** [X hours / X.X days ago at time of scouting - computed from Snowflake decode]
 **Snowflake Status ID:** [The numeric status ID used for timestamp decode]
 **Post Text:** [Full text of the original post]
-**Post Engagement:** [Likes, replies, reposts, quotes - approximate]
+**Post Engagement:** [Likes, replies, reposts, quotes]
+**Engagement Confidence:** [VERIFIED (via API) / ESTIMATED (via WebSearch snippet) - always label which]
 **Reply Section Status:** [Number of existing replies, quality of conversation]
 **Topic Area:** [Which specific sub-territory this maps to - NOT just "AI Commerce" but the specific angle within it]
 **Source:** [How we found this - which Stage (A/B/C/D) and specific query or channel]

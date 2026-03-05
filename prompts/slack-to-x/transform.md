@@ -36,6 +36,17 @@ Every transformed post draws from three layers of context. Understanding which l
 
 ## The Transformation Protocol
 
+### Step 0: Source Material Validation
+
+If the Slack message references external source material (a research paper, article, product announcement, etc.) that the transformed post will engage with, attempt to fetch and verify it before transforming.
+
+- **VALIDATED:** Source retrieved and read. Transform can engage with specifics.
+- **PARTIAL:** Only abstract/summary available. Transform should engage with the thesis, not specific claims.
+- **UNVALIDATED:** Source could not be retrieved. Transform must work from the Slack message alone. Flag for Mike: "Recommend reviewing [link] before posting."
+- **N/A:** No external source referenced.
+
+Note the result in the output. Same principle as the Reply Engine: Mike's credibility depends on precision. Never assume what a source says based on its title.
+
 ### Step 1: Extract the Core Insight
 
 Read the Slack message. Identify the single sharpest insight. State it in one sentence. This is your One Nail.
@@ -102,6 +113,7 @@ Run the transformed post through `prompts/shared/quality-gate-posts.md`. All gat
 4. Throughline Test - Is there one clear idea?
 5. Follow Test - Does this earn a follow for @michaelquoc specifically?
 6. Outside-In Test - Does the post center the reader's problem?
+7. Outsider Legibility Test - Would a non-employee in the AI/tech space understand every word?
 
 If any gate fails, apply the suggested fixes and re-run. If the post cannot pass after one revision, flag for Dakota review.
 
@@ -165,6 +177,10 @@ When in doubt, flag for Dakota review. Better to flag a false positive than to l
 - Throughline Test: [PASS/FAIL - the one sentence]
 - Follow Test: [PASS/FAIL]
 - Outside-In Test: [PASS/FAIL - is the first sentence about the reader's world?]
+- Outsider Legibility Test: [PASS/FAIL - any insider-only phrases flagged, or "Clean"]
+
+**Source Validation:** [VALIDATED / PARTIAL / UNVALIDATED / N/A]
+**Source Note:** [If PARTIAL or UNVALIDATED: what Mike should verify. If VALIDATED or N/A: "None"]
 
 **Sensitivity Check:** [Clean / Flagged - what was redacted]
 

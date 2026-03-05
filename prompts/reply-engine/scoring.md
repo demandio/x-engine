@@ -53,11 +53,11 @@ Is this the right account to engage with - and is THIS SPECIFIC POST generating 
 | Score | Criteria |
 |-------|----------|
 | 9-10 | 25K-200K followers, active AI/tech audience, posts generate substantive reply threads, audience overlaps with Mike's target. **This specific post** has replies that are substantive (multi-sentence, building on each other) - not just emoji reactions or one-word agreement. |
-| 7-8 | 10K-500K range, relevant topic, decent engagement, audience reasonably aligned. This post has some substantive replies mixed with lighter engagement. |
-| 5-6 | Either too small (<15K) or too large (>300K), audience partially aligned, engagement inconsistent. **Or:** follower count is in range but this specific post has a dead or low-quality comment section (mostly "great take!" or emoji-only replies). |
+| 7-8 | 10K-500K range, relevant topic, decent engagement, audience reasonably aligned. This post has some substantive replies mixed with lighter engagement. **Includes large accounts (200K-500K) with a relevant AI/tech builder audience** - Mike's credibility carries weight even in busy comment sections, and these are high-value networking opportunities. |
+| 5-6 | Either too small (<15K) or very large (>500K) with a general/non-builder audience, engagement inconsistent. **Or:** follower count is in range but this specific post has a dead or low-quality comment section (mostly "great take!" or emoji-only replies). |
 | 1-4 | Wrong audience entirely, dead comment sections, or reply section too crowded for visibility. **Or:** high-follower account where engagement is bot-heavy, spam-heavy, or purely performative. |
 
-**Scoring physics:** The goal is not just visibility - it is visibility with the RIGHT people. A substantive reply on a 50K-follower AI founder's post is worth more than a reply on a 1M-follower tech influencer's post where Mike's comment drowns in noise.
+**Scoring physics:** The goal is not just visibility - it is visibility with the RIGHT people. A substantive reply on a 50K-follower AI founder's post is worth more than a reply on a 1M-follower tech influencer's post where Mike's comment drowns in noise. However, do not over-penalize large accounts (200K-500K) when the audience is relevant (AI builders, founders, operators). Mike's name and credibility in the AI commerce space carry enough weight to earn engagement even in busier comment sections. Large-account replies also serve a networking function - they put Mike in front of high-value people he wouldn't reach through smaller accounts. The penalty should scale with audience irrelevance, not just raw follower count.
 
 **Engagement validation (new):** Do not score Account Quality based on follower count alone. A 100K-follower account with dead comment sections scores lower than a 30K-follower account with active, substantive reply threads. Check the SPECIFIC POST's reply quality:
 - Are replies multi-sentence and building on the original argument? (Good)
@@ -121,6 +121,25 @@ Maximum possible: 80
 
 ---
 
+## Data Confidence Adjustment
+
+The scout labels every data point as VERIFIED (from API) or ESTIMATED (from WebSearch). Apply the following adjustments:
+
+- **All data VERIFIED:** No adjustment. Score as normal.
+- **Follower count or engagement ESTIMATED:** Apply a -2 total score penalty. Note in output: "Score adjusted -2 for estimated data."
+- **Post text TRUNCATED:** Apply a -3 total score penalty. Note in output: "Score adjusted -3 for truncated post text." A truncated post means the scorer and drafter cannot fully evaluate the content - this penalty reflects that uncertainty, not a judgment on the post's quality.
+- **Both estimated data AND truncated text:** Penalties stack (max -5). Note both adjustments.
+
+These penalties do not change dimension scores. They are applied to the total score after weighting. A candidate with raw score 52 and -3 for truncated text lands at 49 - barely passing. This is intentional. The system should be conservative when working with incomplete data.
+
+In the output, add after the score line:
+```
+**Data Confidence:** [FULL (all data verified) / PARTIAL (some data estimated) / LOW (post text truncated + data estimated)]
+**Confidence Adjustments:** [List any penalties applied, or "None"]
+```
+
+---
+
 ## Ranking and Cutoff
 
 1. Rank all candidates by total score.
@@ -139,9 +158,11 @@ For each surviving target, output:
 ### Target [N]: "[One-line description of what the post is about]"
 **Score:** [Total] / 80 | Territory: [X] (x2=[Y]) | Opportunity: [X] (x2=[Y]) | Account: [X] | Fresh: [X] | Visibility: [X] | Multi-Signal: [X]
 **Post URL:** [Direct link to the tweet - REQUIRED]
-**Post Author:** @[handle] ([follower count])
+**Post Author:** @[handle] ([follower count], [VERIFIED / ESTIMATED])
 **Post Date:** [YYYY-MM-DD HH:MM UTC]
 **Post Age:** [Hours since posted]
+**Data Confidence:** [FULL / PARTIAL / LOW]
+**Confidence Adjustments:** [List any penalties applied, or "None"]
 **Source:** [How we found this]
 
 **The Post:** [Full text of the original post]
@@ -215,7 +236,7 @@ Use these examples to calibrate your scoring. Adjust based on Mike's actual appr
 |-----------|-------|-----------|
 | Territory Fit | 4 (x2 = 8) | Off-territory: Pure model benchmarking without a commerce/operations angle. |
 | Conversation Opportunity | 5 (x2 = 10) | 200+ replies. The conversation is saturated with model comparison takes. Hard to add anything new. |
-| Account Quality | 5 | 320K followers but broad tech audience, not AI-builder specific. Reply section is a firehose. |
+| Account Quality | 4 | 320K followers with a broad tech audience, not AI-builder specific. The follower count alone does not kill it - the audience irrelevance does. A 320K-follower account with an AI-builder audience would score 7. |
 | Post Freshness | 3 | 18 hours old. The model release conversation has moved to specific use cases. |
 | Reply Visibility | 3 | 200+ replies. Mike's reply would be buried. |
 | Multi-Signal | 4 | Mike's take would be one of many. Low differentiation = low engagement cascade potential. |
