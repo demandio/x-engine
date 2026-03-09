@@ -28,7 +28,9 @@ If a previous brief is unavailable (first run, files missing), note it in the sc
 
 Scout replies from accounts matching these criteria:
 
-**Follower Range:** 10K-500K. Below 10K, the audience is too small to generate profile visits from replies. Above 500K, the reply section is too crowded for Mike's reply to get visibility.
+**Follower Range:** 5K-500K. The sweet spot is 10K-500K. Accounts in the 5K-10K range can be collected but require exceptional signal to survive scoring (they cap at 5 on Account Quality). Below 5K is a hard floor - do not collect unless the specific post has gone viral (500+ engagements), in which case the post's reach matters more than the account's baseline audience.
+
+**Follower count verification (sub-10K accounts):** When initial search results return a follower count under 10K, perform a dedicated user lookup call (`/2/users/:id` or `/2/users/by/username/:username`) to confirm the exact count before passing to scoring. Search result metadata can return stale or inaccurate follower counts, especially for smaller accounts. The dedicated lookup is the source of truth. This costs one additional API call per borderline candidate - negligible against the 300/15min user lookup limit. If the verified count is below 5K and the post has not gone viral, kill the candidate at scouting. Do not pass it to the scoring engine.
 
 **Topic Alignment:** The account posts regularly about topics in Mike's semantic territory: AI agents, AI commerce, AI infrastructure, trust/verification, building AI products, AI in production. Accounts that occasionally post about these topics are lower priority than accounts whose primary beat is in our lane.
 
@@ -89,6 +91,38 @@ Every data point about a candidate must be labeled with its confidence level. Th
 - If the full post text cannot be retrieved, flag it in the output. The scorer applies a confidence penalty for ESTIMATED data, and the drafter needs to know if it's working with partial information.
 
 **Why this matters:** The scoring engine and drafter make decisions based on this data. A reply drafted against a truncated post risks arguing a straw man. A score based on estimated follower counts may over- or under-weight Account Quality. Honest labeling lets Dakota and Mike make informed calls.
+
+---
+
+## X API Rate Limit Management
+
+The X Twitter MCP uses the X API v2. Understanding the rate limits prevents unnecessary fallbacks to WebSearch and keeps data quality high (VERIFIED vs. ESTIMATED).
+
+**Relevant endpoint limits (per 15-minute window):**
+
+| Endpoint | What we use it for | Per-App | Per-User |
+|---|---|---|---|
+| Recent search (`/2/tweets/search/recent`) | Scouting queries | 450/15min | 300/15min |
+| Users lookup (`/2/users/:id`) | Follower counts, profile data | 300/15min | 900/15min |
+| Tweet lookup (`/2/tweets/:id`) | Full post text, engagement metrics | 450/15min | 900/15min |
+| User tweets timeline (`/2/users/:id/tweets`) | Tracked account recent posts | 10,000/15min | 900/15min |
+
+A typical scouting run uses 60-100 total API calls across all endpoints - well within the per-window limits. Rate limit errors during scouting are almost always caused by making calls too fast, not by exhausting the budget.
+
+**Pacing rules (non-negotiable):**
+
+1. **Add a 2-3 second delay between every X API call.** This prevents transient 429 errors from rapid-fire requests. The extra 2-3 minutes on a full run is negligible for an unattended daily cron job.
+2. **Monitor response headers.** After each API call, check `x-rate-limit-remaining`. If remaining drops below 20% of `x-rate-limit-limit` for any endpoint, increase the delay to 5 seconds between calls. If remaining hits 0, wait until the `x-rate-limit-reset` timestamp before continuing. Do not fall back to WebSearch until the rate limit window has been exhausted AND the reset wait would exceed 5 minutes.
+3. **If a 429 error occurs:** Read the `x-rate-limit-reset` header. Wait until that timestamp. Then retry the same call. Do not skip the query. Do not fall back to WebSearch unless the wait would exceed 5 minutes. Log the 429 in the scouting report.
+
+**Monthly budget awareness:**
+
+Rate limits (per-15-minute) and billing (monthly post consumption) are separate. Each search query returns posts that count toward the monthly read budget. To conserve monthly budget without sacrificing signal:
+
+- **Zeitgeist discovery queries (Stage B):** Use `max_results=10`. We only need the top stories to identify dominant conversations, not 100 results per query.
+- **Territory baseline queries (Stage C):** Use `max_results=25`. Wider net than zeitgeist but still conservative.
+- **Reactive queries (Stage C):** Use `max_results=50`. These are the highest-signal queries informed by Slack context and zeitgeist - worth pulling more candidates.
+- **Tracked account queries (Stage D):** Use `max_results=10`. We are checking for recent high-engagement posts, not exhaustive history.
 
 ---
 

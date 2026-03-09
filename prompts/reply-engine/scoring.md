@@ -54,8 +54,9 @@ Is this the right account to engage with - and is THIS SPECIFIC POST generating 
 |-------|----------|
 | 9-10 | 25K-200K followers, active AI/tech audience, posts generate substantive reply threads, audience overlaps with Mike's target. **This specific post** has replies that are substantive (multi-sentence, building on each other) - not just emoji reactions or one-word agreement. |
 | 7-8 | 10K-500K range, relevant topic, decent engagement, audience reasonably aligned. This post has some substantive replies mixed with lighter engagement. **Includes large accounts (200K-500K) with a relevant AI/tech builder audience** - Mike's credibility carries weight even in busy comment sections, and these are high-value networking opportunities. |
-| 5-6 | Either too small (<15K) or very large (>500K) with a general/non-builder audience, engagement inconsistent. **Or:** follower count is in range but this specific post has a dead or low-quality comment section (mostly "great take!" or emoji-only replies). |
-| 1-4 | Wrong audience entirely, dead comment sections, or reply section too crowded for visibility. **Or:** high-follower account where engagement is bot-heavy, spam-heavy, or purely performative. |
+| 5-6 | 5K-10K followers with strong topic alignment and an active post, or very large (>500K) with a general/non-builder audience, or in-range follower count but this specific post has a dead or low-quality comment section (mostly "great take!" or emoji-only replies). Accounts in the 5K-10K range cap at 5 on this dimension unless the specific post has gone viral (500+ engagements). |
+| 3-4 | Under 5K followers (hard floor - should not reach scoring unless the post went viral). Or wrong audience entirely, dead comment sections, or reply section too crowded for visibility. |
+| 1-2 | High-follower account where engagement is bot-heavy, spam-heavy, or purely performative. Or sub-5K account with no viral signal that slipped past the scout. |
 
 **Scoring physics:** The goal is not just visibility - it is visibility with the RIGHT people. A substantive reply on a 50K-follower AI founder's post is worth more than a reply on a 1M-follower tech influencer's post where Mike's comment drowns in noise. However, do not over-penalize large accounts (200K-500K) when the audience is relevant (AI builders, founders, operators). Mike's name and credibility in the AI commerce space carry enough weight to earn engagement even in busier comment sections. Large-account replies also serve a networking function - they put Mike in front of high-value people he wouldn't reach through smaller accounts. The penalty should scale with audience irrelevance, not just raw follower count.
 
@@ -147,6 +148,27 @@ In the output, add after the score line:
 3. **Soft cutoff:** Surface the top 10-15 candidates above the threshold.
 4. If fewer than 8 candidates pass, surface what passes. A slow news day produces fewer targets.
 5. If more than 15 pass, surface the top 15.
+
+---
+
+## Thematic Concentration Check (Run After Ranking)
+
+After ranking and cutoff, review the full set of passing targets as a portfolio. This check catches thematic clustering that individual scoring misses - a problem where every target scores well individually but the brief as a whole reads as one-note.
+
+**The check:** Group passing targets by the underlying conversation they enter (not just sub-territory, but the specific thematic area). For example, three targets about context windows, agent memory, and context engineering all enter the same thematic conversation even if they span different sub-territories.
+
+**Trigger:** If more than 3 passing targets enter the same thematic conversation, the brief is concentration-heavy.
+
+**When triggered:**
+
+1. Flag the concentration in the scoring output: "Thematic concentration detected: [X] of [Y] passing targets enter the [theme] conversation."
+2. Review the killed candidates (those that scored 40-47, just below the cutoff) for the highest-scoring candidate from a DIFFERENT thematic area.
+3. If a viable swap exists (killed candidate scored 40+ and covers a different theme): recommend replacing the lowest-scoring target in the concentrated cluster with the rescued candidate. Present both options to Dakota: the original set and the diversified set.
+4. If no viable swap exists (no killed candidates from other themes scored above 40): proceed with the original set but note the concentration risk. The drafter and quality gate (Monotony Test) will catch repetition in the actual drafts, but Dakota should be aware the scouting pool was narrow this cycle.
+
+**What this does NOT do:** It does not override individual scores. A target that scores 70/80 is not killed because it shares a theme with two other high scorers. The check suggests portfolio-level swaps, not individual penalties. Dakota makes the final call.
+
+**Why this matters:** Mike's X profile is the sum of all his replies. If 5 of 9 replies in a single day enter the same conversation, the algorithm may cluster his profile too narrowly. The serendipity of varied topics is what builds the perception of range. Range builds authority.
 
 ---
 

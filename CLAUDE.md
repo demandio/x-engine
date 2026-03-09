@@ -76,6 +76,10 @@ When Dakota says: **"Run the Thematic Scan"** (or any variation), execute the La
 4. **Map opportunities** - Assess content potential for each cluster (Thread / Reply ammunition / Reactive trigger / Building-in-public).
 5. **Output** - Write structured thematic context to `output/thematic-context.md`. This file is then referenced by the Reply Engine drafter and Slack-to-X transform as Layer 2 context.
 
+### Cross-System Coordination (Combined Briefs)
+
+When both the Reply Engine and Slack-to-X Pipeline produce output on the same day and the results are combined into a single brief, check for thematic overlap between the two systems. If a Slack-to-X post and a reply target are both entering the same conversation from the same angle, flag the overlap and suggest sequencing: publish the original post first and then use the reply to amplify the topic, or vice versa. Do not publish both simultaneously if they cover the same ground - it reads as repetitive on Mike's timeline.
+
 ## Project Structure
 
 ```
