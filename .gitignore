@@ -8,5 +8,3 @@ x-engine-skill/.mcp.json
 # Claude Code local settings
 .claude/
 
-# Slack MCP plugin (separate repo)
-slack-mcp-plugin/
