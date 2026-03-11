@@ -1,0 +1,12 @@
+# Secrets - MCP configs contain API keys
+.mcp.json
+x-engine-skill/.mcp.json
+
+# macOS
+.DS_Store
+
+# Claude Code local settings
+.claude/
+
+# Slack MCP plugin (separate repo)
+slack-mcp-plugin/
