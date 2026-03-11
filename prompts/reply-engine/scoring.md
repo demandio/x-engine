@@ -18,6 +18,20 @@ Read `grounding/individual/mike-quoc-v2.md` before scoring. Every score must map
 
 ---
 
+## Input Validation (Run Before Scoring)
+
+Before scoring any candidates, validate that the scouting output meets minimum quality standards. This is not optional.
+
+**Check 1 - Dedup proof block:** The scouting output MUST contain a `## DEDUP GATE` section at the top. If this section is missing, the scouting run did not perform deduplication. **Do not score.** Return the output to the scout with: "Scoring rejected: dedup gate proof block missing. Re-run scout with dedup check."
+
+**Check 2 - Follower verification log:** The scouting output MUST contain a `## FOLLOWER VERIFICATION LOG` section. If missing, flag it in the scoring report header but proceed with scoring - apply the UNVERIFIED follower count penalty (-3) to any candidate where follower count confidence is not VERIFIED.
+
+**Check 3 - Snowflake timestamps:** Every candidate MUST have a Snowflake-decoded timestamp. Any candidate without one is returned to the scout for validation. Do not score candidates with unvalidated timestamps.
+
+If all three checks pass, proceed to scoring. If Check 1 fails, halt entirely - return to scout. If Check 3 fails for any individual candidate, reject that candidate (do not score it) but continue scoring the rest. Check 2 allows full progression with penalties applied to unverified accounts.
+
+---
+
 ## The 6 Scoring Dimensions
 
 ### Dimension 1: Territory Fit (Weight: 2x)
@@ -133,6 +147,10 @@ The scout labels every data point as VERIFIED (from X Twitter MCP) or ESTIMATED 
 
 These penalties do not change dimension scores. They are applied to the total score after weighting. A candidate with raw score 52 and -3 for truncated text lands at 49 - barely passing. This is intentional. The system should be conservative when working with incomplete data.
 
+**Hard kill rule for degraded data:** If a candidate has ESTIMATED follower data AND the post shows zero or near-zero engagement (under 5 replies AND under 10 likes), kill the candidate immediately. Do not score it. Do not apply soft penalties. Log the kill: "Hard killed: ESTIMATED data + zero engagement. Cannot verify account quality or conversation opportunity." This prevents the pipeline from surfacing ghost candidates during fallback/degraded data runs. A candidate with no verifiable engagement and no verifiable follower count is not a borderline case - it is an unknown with no signal.
+
+**UNVERIFIED follower count rule:** If the scout passes a candidate with an UNVERIFIED follower count (WebFetch failed, MCP data unreliable), apply an additional -3 penalty on top of any other confidence adjustments. An UNVERIFIED follower count means the pipeline cannot confirm the account meets the 5K floor. The penalty reflects that uncertainty. If the adjusted total drops below 48, the candidate dies.
+
 In the output, add after the score line:
 ```
 **Data Confidence:** [VERIFIED (all data from X Twitter MCP) / MIXED (some data from WebSearch fallback) / ESTIMATED (post text truncated + data estimated)]
@@ -180,7 +198,7 @@ For each surviving target, output:
 ### Target [N]: "[One-line description of what the post is about]"
 **Score:** [Total] / 80 | Territory: [X] (x2=[Y]) | Opportunity: [X] (x2=[Y]) | Account: [X] | Fresh: [X] | Visibility: [X] | Multi-Signal: [X]
 **Post URL:** [Direct link to the tweet - REQUIRED]
-**Post Author:** @[handle] ([follower count], [VERIFIED / ESTIMATED])
+**Post Author:** @[handle] ([follower count], [VERIFIED / ESTIMATED / UNVERIFIED])
 **Post Date:** [YYYY-MM-DD HH:MM UTC]
 **Post Age:** [Hours since posted]
 **Data Confidence:** [FULL / PARTIAL / LOW]

@@ -112,6 +112,31 @@ x-engine/
   output/                            # Store completed briefs here
 ```
 
+## Pipeline Compliance (Every Run)
+
+Every Reply Engine run MUST include a compliance checklist at the top of the delivered brief. This is not optional. If a gate was skipped, the checklist makes it visible to Dakota immediately rather than buried in the output.
+
+**Required compliance block (include at top of every brief, before any targets):**
+
+```
+## PIPELINE COMPLIANCE CHECK
+- [ ] Grounding files loaded (mike-quoc-v2.md, universal-grounding.md)
+- [ ] Thematic context loaded (output/thematic-context.md) or noted as unavailable
+- [ ] Dedup gate: [PASSED / FIRST RUN / FAILED - reason]
+- [ ] Follower verification: [X] borderline accounts checked via WebFetch, [Y] killed
+- [ ] Snowflake timestamps: All candidates validated [YES / NO - list exceptions]
+- [ ] Engagement floors enforced (scoring stage): ESTIMATED + zero-engagement candidates hard-killed [YES / count killed]
+- [ ] Sensitivity screen: Applied to all candidates [YES / NO]
+- [ ] Data confidence: [X]% VERIFIED, [Y]% ESTIMATED, [Z]% UNVERIFIED
+- [ ] Scoring input validation: Dedup proof block present [YES / NO], Follower log present [YES / NO]
+```
+
+**If any gate shows NO or FAILED:** Dakota reviews before the brief goes to Mike. A brief with failed gates is a draft, not a deliverable.
+
+**The agent must never silently skip a gate.** If a gate cannot be completed (API down, files missing, WebFetch blocked), the correct behavior is to report the failure in the compliance block and proceed with conservative defaults - not to skip the gate and produce output as if it passed.
+
+---
+
 ## Non-Negotiable Rules
 
 1. **Load grounding files first.** Every session. No exceptions.
@@ -122,6 +147,8 @@ x-engine/
 6. **The Gift Principle.** Every piece of content must deliver value to the reader. No agreement-only replies. No surface commentary. The reader must walk away with something.
 7. **Voice fidelity.** Mike's voice is The Diagnostic Peer. Inside the conversation, not above it. Names the mechanism. Active voice. Punchy. Binary. 1-4 sentences for replies.
 8. **Sensitivity screen.** Strip all internal details: customer names, revenue, unreleased features, project codenames, competitor strategy, team data. When in doubt, flag for Dakota.
+9. **Pipeline compliance.** Every brief MUST include the Pipeline Compliance Check block. Every gate must be reported as passed, failed (with reason), or not applicable (with reason). No silent skips. A skipped gate is a failed gate. A failed gate makes the brief a draft, not a deliverable.
+10. **Conservative defaults.** When data is degraded, missing, or uncertain, the default is to kill the candidate - not to apply soft penalties and pass it through. ESTIMATED data + zero engagement = kill. UNVERIFIED follower count = -3 penalty. Missing dedup check = halt. The pipeline should fail loud and conservative, not quiet and permissive.
 
 ## Operator
 
