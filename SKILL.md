@@ -26,6 +26,14 @@ Post a previously generated reply brief to Slack:
 /Users/moltbot/clawd/skills/x-engine/x-engine-post-brief-to-slack.sh /Users/moltbot/clawd/skills/x-engine/x-engine-skill/output/reply-brief-2026-03-11.md
 ```
 
+### Slack-to-X Daily Scan (Daily Automated - 5 PM PST Cron)
+
+Scans all of Mike's Slack messages from the last 24 hours, scores them, transforms passing ones into X post drafts, and delivers to #x-engine-channel. Runs automatically via cron. To run manually:
+
+```bash
+./x-engine-slack-to-x-daily.sh
+```
+
 ### Slack-to-X Pipeline (On-Demand)
 
 Run interactively in Claude Code from the `x-engine-skill/` directory:
@@ -99,12 +107,14 @@ Both configured in `x-engine-skill/.mcp.json` and `~/.claude/.mcp.json`:
 
 - **Channel:** #x-engine-channel (C0AGXSW1X8A)
 - **Format:** Thread-based (parent summary + .md attachment + one reply per target)
-- **File:** `output/reply-brief-YYYY-MM-DD.md`
+- **Reply Engine output:** `output/reply-brief-YYYY-MM-DD.md`
+- **Slack-to-X output:** `output/slack-to-x-scan-YYYY-MM-DD.md`
 
 ## Cron Schedule
 
-```
-0 6 * * * /Users/moltbot/clawd/skills/x-engine/x-engine-reply-engine-daily.sh
-```
+| Time (PST) | Script | Purpose |
+|---|---|---|
+| 6:00 AM | `x-engine-reply-engine-daily.sh` | Scout X for reply targets |
+| 5:00 AM Mon/Wed/Fri | `x-engine-slack-to-x-daily.sh` | Scan Slack for X-worthy posts (DISABLED) |
 
-6 AM PST daily. Mac must be awake. Logs at `~/.clawdbot/cron/runs/x-engine-reply-engine-*.log`.
+Logs in `./logs/`. Mac must be awake for cron to fire.

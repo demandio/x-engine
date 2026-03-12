@@ -8,3 +8,4 @@ x-engine-skill/.mcp.json
 # Claude Code local settings
 .claude/
 
+logs/
