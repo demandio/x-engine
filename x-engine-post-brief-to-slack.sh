@@ -2,13 +2,15 @@
 # Post a Reply Engine brief to #x-engine-channel via Claude + Slack MCP
 # Usage: x-engine-post-brief-to-slack.sh [path-to-brief.md]
 #   Defaults to today's brief if no argument given.
+# Portable: works on any machine with claude CLI installed
 
 set -uo pipefail
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
-export HOME="/Users/moltbot"
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$HOME/bin:$PATH"
 
-WORKSPACE="/Users/moltbot/clawd/skills/x-engine/x-engine-skill"
+# All paths relative to this script's location
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+WORKSPACE="$SCRIPT_DIR/x-engine-skill"
 SLACK_CHANNEL="C0AGXSW1X8A"
 DATE=$(date +%Y-%m-%d)
 
@@ -17,6 +19,13 @@ BRIEF="${1:-$WORKSPACE/output/reply-brief-$DATE.md}"
 
 if [ ! -f "$BRIEF" ]; then
   echo "ERROR: Brief not found at $BRIEF"
+  exit 1
+fi
+
+# Find claude CLI
+CLAUDE_BIN=$(command -v claude 2>/dev/null || true)
+if [ -z "$CLAUDE_BIN" ]; then
+  echo "ERROR: claude CLI not found in PATH. Install it first."
   exit 1
 fi
 
@@ -31,7 +40,7 @@ Format for Slack readability:
 - Do NOT skip any targets. Post all of them."
 
 cd "$WORKSPACE"
-/opt/homebrew/bin/claude -p "$PROMPT" \
+"$CLAUDE_BIN" -p "$PROMPT" \
   --dangerously-skip-permissions \
   2>&1
 
