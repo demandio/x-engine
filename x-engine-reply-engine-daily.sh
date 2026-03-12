@@ -6,7 +6,7 @@
 
 set -uo pipefail
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$HOME/bin:$PATH"
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$HOME/bin:$PATH"
 export TZ="America/Los_Angeles"
 
 # All paths relative to this script's location
