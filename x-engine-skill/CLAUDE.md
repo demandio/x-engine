@@ -64,7 +64,7 @@ Execute the 4-stage pipeline:
 
 ### Slack-to-X Daily Scan
 
-When triggered to **"Scan Slack for X-worthy messages"** (or any variation), search for Mike's messages across **all public Slack channels** from the last 24 hours using his Slack user ID (U02BJAWG9). Use `slack_search_public` with `from:<@U02BJAWG9>` to find messages across all channels - do not limit to the 5 primary channels listed above. Mike drops insights in threads, side channels, and conversations that are not on the primary list. For each message that looks like it could be a public post, run it through the Slack-to-X scoring engine. Surface any that score 48+.
+When triggered to **"Scan Slack for X-worthy messages"** (or any variation), search for Mike's messages across **all public Slack channels** from the last 48 hours using his Slack user ID (U02BJAWG9). Use `slack_search_public` with `from:<@U02BJAWG9>` to find messages across all channels - do not limit to the 5 primary channels listed above. Mike drops insights in threads, side channels, and conversations that are not on the primary list. For each message that looks like it could be a public post, run it through the Slack-to-X scoring engine. Surface any that score 48+.
 
 ### Thematic Scan (Bi-Weekly)
 

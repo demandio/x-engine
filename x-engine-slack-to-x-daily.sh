@@ -38,7 +38,7 @@ log "Claude: $CLAUDE_BIN"
 
 PROMPT="Scan Slack for X-worthy messages. Read prompts/slack-to-x/agent.md for the full pipeline instructions.
 
-Search all public Slack channels for Mike's messages (user ID: U02BJAWG9) from the last 24 hours using slack_search_public with from:<@U02BJAWG9>.
+Search all public Slack channels for Mike's messages (user ID: U02BJAWG9) from the last 48 hours using slack_search_public with from:<@U02BJAWG9>.
 
 For each message that looks like it could be a public X post:
 1. Score it using prompts/slack-to-x/scoring.md (6 dimensions, cutoff 48/80)
