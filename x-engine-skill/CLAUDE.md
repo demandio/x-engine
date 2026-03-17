@@ -26,7 +26,7 @@ Files 1 and 2 are symlinked from the Ghost Engine. They are the single source of
 When triggered (daily cron at 6 AM PST, or manual run), execute the full 4-stage pipeline autonomously:
 
 1. **Scout** - Read `prompts/reply-engine/scout.md`. Collect 30-50 candidate posts from X using X Twitter MCP (primary), WebSearch (fallback), and Slack context (via Slack MCP).
-2. **Score** - Read `prompts/reply-engine/scoring.md`. Score each candidate on 6 weighted dimensions. Hard cutoff at 48/80. Surface top 10-15.
+2. **Score** - Read `prompts/reply-engine/scoring.md`. Score each candidate on 6 weighted dimensions. Hard cutoff at 48/80. Surface top 5 only.
 3. **Draft** - Read `prompts/reply-engine/drafter.md`. Draft one reply per surviving target in Mike's voice. Run each through `prompts/shared/quality-gate-replies.md`.
 4. **Deliver** - Format output using `templates/reply-targets-daily.md`. Two-part structure: Part 1 (Scouting provenance), Part 2 (Targets for Mike). Post to Slack #x-engine-channel (C0AGXSW1X8A) as a threaded message.
 
@@ -39,7 +39,7 @@ When triggered (daily cron at 6 AM PST, or manual run), execute the full 4-stage
 
 **Mike's Slack user ID:** U02BJAWG9 (filter for his messages when scanning channels)
 
-**Default signal period:** Last 24 hours for Slack signals. Last 72 hours (default) / 7 days (hard cap) for X reply targets. All X post timestamps must be Snowflake-validated (see scout.md).
+**Default signal period:** Last 24 hours for Slack signals. 72 hours (hard cap) for X reply targets. All X post timestamps must be Snowflake-validated (see scout.md).
 
 ### Slack-to-X Pipeline (On-Demand)
 

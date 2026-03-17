@@ -1,6 +1,6 @@
 #!/bin/bash
 # X Engine Slack-to-X - Daily Scan
-# Scans Mike's Slack messages from the last 24 hours, scores them,
+# Scans Mike's Slack messages from the last 48 hours, scores them,
 # transforms passing ones into X post drafts, delivers to #x-engine-channel.
 # Portable: works on any machine with claude CLI installed
 
