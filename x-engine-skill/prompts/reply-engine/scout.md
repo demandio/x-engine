@@ -166,8 +166,8 @@ The X Twitter MCP uses the X API v2. Understanding the rate limits prevents unne
 Rate limits (per-15-minute) and billing (monthly post consumption) are separate. Each search query returns posts that count toward the monthly read budget. To conserve monthly budget without sacrificing signal:
 
 - **Zeitgeist discovery queries (Stage B):** Use `max_results=10`. We only need the top stories to identify dominant conversations, not 100 results per query.
-- **Territory baseline queries (Stage C):** Use `max_results=15`. Sufficient for baseline signal.
-- **Reactive queries (Stage C):** Use `max_results=25`. These are the highest-signal queries informed by Slack context and zeitgeist.
+- **Territory baseline queries (Stage C):** Use `max_results=25`. Wider net than zeitgeist but still conservative.
+- **Reactive queries (Stage C):** Use `max_results=50`. These are the highest-signal queries informed by Slack context and zeitgeist - worth pulling more candidates.
 - **Tracked account `from:` queries (Stage D):** Use `max_results=10`. Small and targeted — we only need to see their recent posts, not their full history.
 
 ---
