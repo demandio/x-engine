@@ -153,27 +153,28 @@ The X Twitter MCP uses the X API v2. Understanding the rate limits prevents unne
 | Tweet lookup (`/2/tweets/:id`) | Full post text, engagement metrics | 450/15min | 900/15min |
 | User tweets timeline (`/2/users/:id/tweets`) | Tracked account recent posts | 10,000/15min | 900/15min |
 
-A typical scouting run uses 60-100 total API calls across all endpoints - well within the per-window limits. This is a paid Pro tier account with generous rate limits.
+**Total query budget for a single scouting run: 18 `search_tweets` calls maximum.** A typical run uses 12-15, leaving a comfortable safety margin. Count every call before firing it.
 
 **Pacing rules:**
 
-1. **No artificial delays between API calls.** Fire requests as fast as possible. The paid Pro tier has sufficient rate limits (450 searches/15min, 300 user lookups/15min) to handle the full scouting run without throttling.
-2. **If a 429 error occurs:** Read the `x-rate-limit-reset` header. Wait until that timestamp. Then retry the same call. Do not skip the query. Do not fall back to WebSearch unless the wait would exceed 5 minutes. Log the 429 in the scouting report.
+1. **Batch in groups of 6, not all at once.** Fire up to 6 `search_tweets` calls in parallel, then pause briefly before the next batch. This prevents the MCP from hitting the per-app burst ceiling even on paid Pro tier.
+2. **If a 429 error occurs:** Do NOT immediately retry or fall back to WebSearch. First check if you have already collected enough candidates from prior queries (20+ candidates = proceed to scoring). If yes, skip the rate-limited query and note the gap. If not, wait 60 seconds and retry once. If still 429, fall back to WebSearch for that specific query only. Log every 429 in the scouting report with the query that triggered it.
+3. **Prioritize high-value queries first.** Fire tracked account `from:` searches and reactive queries (Stage C/D) before broad zeitgeist queries (Stage B). If rate limits hit late in the run, only low-priority broad queries are lost — not the best candidates.
 
 **Monthly budget awareness:**
 
 Rate limits (per-15-minute) and billing (monthly post consumption) are separate. Each search query returns posts that count toward the monthly read budget. To conserve monthly budget without sacrificing signal:
 
 - **Zeitgeist discovery queries (Stage B):** Use `max_results=10`. We only need the top stories to identify dominant conversations, not 100 results per query.
-- **Territory baseline queries (Stage C):** Use `max_results=25`. Wider net than zeitgeist but still conservative.
-- **Reactive queries (Stage C):** Use `max_results=50`. These are the highest-signal queries informed by Slack context and zeitgeist - worth pulling more candidates.
-- **Tracked accounts (Stage D):** No dedicated queries. Tracked accounts are context-only annotations applied to candidates that surface organically through Stages B and C.
+- **Territory baseline queries (Stage C):** Use `max_results=15`. Sufficient for baseline signal.
+- **Reactive queries (Stage C):** Use `max_results=25`. These are the highest-signal queries informed by Slack context and zeitgeist.
+- **Tracked account `from:` queries (Stage D):** Use `max_results=10`. Small and targeted — we only need to see their recent posts, not their full history.
 
 ---
 
 ## Scouting Method (Execute in This Order)
 
-The order matters. Each stage informs the next.
+The order matters. Each stage informs the next. **Fire Stage D (tracked account `from:` searches) immediately after Stage A, before Stage B — this ensures the highest-value queries run before any rate limit risk accumulates.**
 
 ### Stage A: Slack Signal (What Is Mike Thinking About Today?)
 
@@ -237,13 +238,17 @@ Take the specific topics, people, products, or events from Stages A and B and bu
 
 Do not reuse yesterday's reactive queries. They must be fresh every run.
 
-### Stage D: Tracked Accounts (Context Only - No Dedicated Searches)
+### Stage D: Tracked Accounts (Small Targeted Batch)
 
-Reference the account tracking list from `prompts/shared/x-ecosystem-setup.md` as context, but do NOT run dedicated `from:[handle]` searches for tracked accounts. No structural scouting advantage.
+Run `from:[handle]` searches for the highest-priority tracked accounts from `prompts/shared/x-ecosystem-setup.md`. These are pre-vetted accounts whose audiences overlap closely with Mike's target — a post from them that surfaces via keyword search may not be their best post from the last 72 hours.
 
-The tracked accounts list serves one purpose: **annotation**. If a post from a tracked account surfaces organically through Stage B or Stage C keyword searches, note it in the candidate record: "Author is on tracked accounts list (Tier [X])." This is a positive scoring signal - it means the account has been pre-vetted for audience relevance and topic alignment - but it does not change how we find candidates.
+**Which accounts to query:** Run `from:` searches only for Tier 1 accounts (top 6-8 highest-signal individuals). Do NOT run `from:` searches for brand accounts, media orgs, or Tier 3+ accounts. Typical Tier 1 examples: emollick, simonw, garrytan, swyx, karpathy, sama (check `x-ecosystem-setup.md` for current list).
 
-**Why no dedicated searches:** Dedicated per-handle searches burn API budget on accounts that may not have posted anything relevant in the last 72 hours. The keyword searches in Stages B and C already catch any tracked account post that is generating conversation in Mike's territory. If a tracked account's post is not surfacing through keyword searches, it is either off-topic or low-engagement - neither of which warrants a reply.
+**How to run:** Fire all Tier 1 `from:` queries as a single parallel batch (6-8 calls max, `max_results=10` each). Run this batch **first**, before Stage B zeitgeist queries, so that if rate limits hit later in the run these high-value queries are already done.
+
+**What to do with results:** Apply the same hard kills (brand check, freshness, dedup) and pass surviving posts to scoring with the annotation: "Author is on tracked accounts list (Tier 1)." This is a positive scoring signal.
+
+**If a `from:` query returns a 429:** Skip it, note the gap, and check whether the account's posts surfaced organically through Stages B/C. Do not retry — move on to the next query.
 
 ---
 

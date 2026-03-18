@@ -57,7 +57,7 @@ Reply drafts must be written in Mike's comment voice: The Diagnostic Peer. Insid
 
 ### Stage 1: Scout
 
-Read `prompts/reply-engine/scout.md`. Collect 30-50 candidate posts from the X ecosystem using X Twitter MCP (primary), WebSearch (fallback), Slack context from all primary channels (via Slack MCP: #ai-news, #productai, #ai-agents, #ai-dev, #ai-prompting), and tracked accounts.
+Read `prompts/reply-engine/scout.md`. Collect 30-50 candidate posts from the X ecosystem using X Twitter MCP (primary), WebSearch (fallback), Slack context from all primary channels (via Slack MCP: #ai-news, #productai, #ai-agents, #ai-dev, #ai-prompting), and tracked accounts. **Run Stage D (Tier 1 `from:` searches) first, immediately after Slack — before broad zeitgeist queries — to protect the highest-value API calls from rate limit risk.**
 
 **Quality Gate: Stage 1 to Stage 2**
 - [ ] At least 20 candidate posts collected
