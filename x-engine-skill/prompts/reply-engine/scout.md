@@ -226,6 +226,11 @@ Now run territory-specific searches. Use a mix of the static baseline queries AN
 - "agent verification" OR "agent trust" OR "AI trust" (past 3 days)
 - "AI infrastructure" OR "AI operations" (past 3 days)
 - "agent reliability" OR "agent errors" OR "AI hallucination" (past 3 days)
+- "AI agent startup" OR "building AI agents" OR "shipping agents" (past 3 days)
+- "LLM production" OR "LLM deployment" OR "model serving" (past 3 days)
+- "AI product" OR "AI product management" OR "AI UX" (past 3 days)
+- "context engineering" OR "prompt engineering" OR "context window" (past 3 days)
+- "agentic workflow" OR "agent orchestration" OR "agent framework" (past 3 days)
 ```
 
 **Fallback:** If X Twitter MCP is unavailable, append `site:x.com` to each query and run via WebSearch. Label all results as ESTIMATED.

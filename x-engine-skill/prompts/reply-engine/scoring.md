@@ -208,6 +208,18 @@ After the Thematic Concentration Check, review the passing targets for author cl
 
 ---
 
+## Author Recency Check (Run After Author Concentration Check)
+
+Before finalizing the top 5, check the `output/` folder for briefs from the last 7 days. If an author appeared as a target in any brief from the past 7 days, apply a -5 penalty to their total score in the current run.
+
+This is not a hard kill. If @sama posts something exceptional that scores 65/80 and appeared in Tuesday's brief, the -5 drops them to 60 - still well above the 48 cutoff. But a repeat author scoring 52 drops to 47 and dies. The penalty creates natural rotation by giving fresh voices a 5-point edge over repeat authors.
+
+**How to check:** Load all brief files from `output/` dated within the last 7 days. Extract every @handle that appeared as a target. Cross-reference against the current run's passing candidates. Apply the -5 to any match.
+
+**Logging:** For every penalized author, note in the scoring output: "Author recency penalty: @[handle] appeared in [brief filename] on [date]. Score adjusted from [X] to [X-5]."
+
+---
+
 ## Output Format
 
 For each surviving target, output:
@@ -248,6 +260,7 @@ After all targets, output the Scouting Quality Report:
 **Territory distribution:** [Breakdown by topic area]
 **Account size distribution:** [Breakdown by follower range]
 **Author concentration:** [X unique authors across Y targets. Any author cap kills: list @handles and kill count, or "None"]
+**Repeat authors penalized:** [X] of [Y] passing candidates had appeared in briefs from the last 7 days
 **Freshness distribution:** [How many under 6hrs, 6-12hrs, 12-24hrs]
 ```
 
