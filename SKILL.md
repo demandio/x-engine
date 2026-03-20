@@ -110,11 +110,19 @@ Both configured in `x-engine-skill/.mcp.json` and `~/.claude/.mcp.json`:
 - **Reply Engine output:** `output/reply-brief-YYYY-MM-DD.md`
 - **Slack-to-X output:** `output/slack-to-x-scan-YYYY-MM-DD.md`
 
-## Cron Schedule
+## Schedule (macOS LaunchAgents)
 
-| Time (PST) | Script | Purpose |
-|---|---|---|
-| 6:00 AM | `x-engine-reply-engine-daily.sh` | Scout X for reply targets |
-| 5:00 AM Mon/Wed/Fri | `x-engine-slack-to-x-daily.sh` | Scan Slack for X-worthy posts (DISABLED) |
+| Time (PST) | LaunchAgent | Script | Status |
+|---|---|---|---|
+| 6:00 AM daily | `com.xengine.reply-engine` | `x-engine-reply-engine-daily.sh` | Active |
+| 5:00 AM Mon/Wed/Fri | `com.xengine.slack-to-x` | `x-engine-slack-to-x-daily.sh` | Disabled |
 
-Logs in `./logs/`. Mac must be awake for cron to fire.
+Plist files in `~/Library/LaunchAgents/`. Logs in `./logs/`. Mac must be awake.
+
+```bash
+# Manually trigger
+launchctl start com.xengine.reply-engine
+
+# Enable slack-to-x
+launchctl enable gui/$(id -u)/com.xengine.slack-to-x
+```

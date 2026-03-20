@@ -9,3 +9,4 @@ x-engine-skill/.mcp.json
 .claude/
 
 logs/
+.claude-token
