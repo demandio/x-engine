@@ -25,10 +25,10 @@ Files 1 and 2 are symlinked from the Ghost Engine. They are the single source of
 
 When Dakota says: **"Run the Reply Engine"** (or any variation), execute the full 4-stage pipeline:
 
-1. **Scout** - Read `prompts/reply-engine/scout.md`. Collect 30-50 candidate posts from X using X Twitter MCP (primary), WebSearch (fallback), and Slack context (via Slack MCP).
+1. **Scout** - Read `prompts/reply-engine/scout.md`. Collect 30-50 candidate posts from X using 5 stages: Slack signal (A), Tracked Accounts across 3 tiers (D), Zeitgeist (B), Viral Discovery for new authors (E), and Territory + Reactive searches (C). Budget: 45 search_tweets calls. Primary source: X Twitter MCP. Fallback: WebSearch.
 2. **Score** - Read `prompts/reply-engine/scoring.md`. Score each candidate on 6 weighted dimensions. Hard cutoff at 48/80. Surface top 10-15.
 3. **Draft** - Read `prompts/reply-engine/drafter.md`. Draft one reply per surviving target in Mike's voice. Run each through `prompts/shared/quality-gate-replies.md`.
-4. **Deliver** - Format output using `templates/reply-targets-daily.md`. Two-part structure: Part 1 (Scouting provenance for Dakota), Part 2 (Targets for Mike).
+4. **Deliver** - Format output using `templates/reply-targets-daily.md`. Two-part structure: Part 1 (Scouting provenance for Dakota), Part 2 (Targets for Mike). Save the brief to the `output/` folder, then **automatically create a Notion page under "X Engine Briefs"** (page ID: `32fa14cb-ed00-81b5-ab0a-f0340e2b26aa`) with the full brief contents so Mike can read, edit, and comment directly in Notion. Title format: "X Engine Daily Brief - [YYYY-MM-DD] [Run N if multiple runs]".
 
 **Slack channels to check** (via Slack MCP - this list is modular, add more as needed):
 - #ai-news (C04E0MPQFUL) - Mike's hot takes and link shares
@@ -60,7 +60,7 @@ Execute the 4-stage pipeline:
 1. **Flag** - Dakota provides the message (already done via paste).
 2. **Score** - Read `prompts/slack-to-x/scoring.md`. Score on 6 dimensions. Kill below 48/80.
 3. **Transform** - Read `prompts/slack-to-x/transform.md`. Convert internal message to public X post. Run through `prompts/shared/quality-gate-posts.md`.
-4. **Approve** - Format using `templates/slack-to-x-approval.md`. Present for Mike's review.
+4. **Approve** - Format using `templates/slack-to-x-approval.md`. Present for Mike's review. **Automatically create a Notion page under "X Engine Briefs"** (page ID: `32fa14cb-ed00-81b5-ab0a-f0340e2b26aa`) with the approval request so Mike can review and edit directly in Notion.
 
 ### Slack-to-X Daily Scan
 
@@ -150,6 +150,7 @@ Every Reply Engine run MUST include a compliance checklist at the top of the del
 9. **Pipeline compliance.** Every brief MUST include the Pipeline Compliance Check block. Every gate must be reported as passed, failed (with reason), or not applicable (with reason). No silent skips. A skipped gate is a failed gate. A failed gate makes the brief a draft, not a deliverable.
 10. **Conservative defaults.** When data is degraded, missing, or uncertain, the default is to kill the candidate - not to apply soft penalties and pass it through. ESTIMATED data + zero engagement = kill. UNVERIFIED follower count = -3 penalty. Missing dedup check = halt. The pipeline should fail loud and conservative, not quiet and permissive.
 11. **Author diversity is non-negotiable.** Maximum 1 target per author per brief. Maximum 2 appearances per author in any rolling 7-day window. No exceptions. No relaxation for narrow pools. No "but the conversations are different" overrides. If the pipeline cannot fill 5 unique-author targets, it is a pipeline failure - fix the scout, do not relax the cap. See `prompts/reply-engine/scoring.md` Author Concentration Check and Author Recency Check for full rules.
+12. **Notion delivery is non-negotiable.** Every completed brief (Reply Engine, Slack-to-X, or combined) MUST be published as a Notion page automatically after saving to the `output/` folder. Do not wait for Dakota to ask. Do not skip this step. **Parent page:** All briefs go under the "X Engine Briefs" page (ID: `32fa14cb-ed00-81b5-ab0a-f0340e2b26aa`). Title format: "X Engine Daily Brief - [YYYY-MM-DD] [Run N if multiple runs]" for Reply Engine briefs, "Slack-to-X Approval - [YYYY-MM-DD]" for Slack-to-X approvals. This is how Mike consumes and edits the output.
 
 ## Operator
 
