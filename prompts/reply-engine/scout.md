@@ -153,28 +153,33 @@ The X Twitter MCP uses the X API v2. Understanding the rate limits prevents unne
 | Tweet lookup (`/2/tweets/:id`) | Full post text, engagement metrics | 450/15min | 900/15min |
 | User tweets timeline (`/2/users/:id/tweets`) | Tracked account recent posts | 10,000/15min | 900/15min |
 
-**Total query budget for a single scouting run: 18 `search_tweets` calls maximum.** A typical run uses 12-15, leaving a comfortable safety margin. Count every call before firing it.
+**Total query budget for a single scouting run: 45 `search_tweets` calls maximum.** A typical run uses 30-40. The X API allows 300 searches per 15-minute window - 45 calls is well within safe limits and ensures the pipeline never starves for candidates. Count every call before firing it.
 
 **Pacing rules:**
 
-1. **Batch in groups of 6, not all at once.** Fire up to 6 `search_tweets` calls in parallel, then pause briefly before the next batch. This prevents the MCP from hitting the per-app burst ceiling even on paid Pro tier.
-2. **If a 429 error occurs:** Do NOT immediately retry or fall back to WebSearch. First check if you have already collected enough candidates from prior queries (20+ candidates = proceed to scoring). If yes, skip the rate-limited query and note the gap. If not, wait 60 seconds and retry once. If still 429, fall back to WebSearch for that specific query only. Log every 429 in the scouting report with the query that triggered it.
-3. **Prioritize high-value queries first.** Fire tracked account `from:` searches and reactive queries (Stage C/D) before broad zeitgeist queries (Stage B). If rate limits hit late in the run, only low-priority broad queries are lost — not the best candidates.
+1. **Batch in groups of 8, not all at once.** Fire up to 8 `search_tweets` calls in parallel, then pause briefly before the next batch. This prevents the MCP from hitting burst ceilings.
+2. **If a 429 error occurs:** Do NOT immediately retry or fall back to WebSearch. First check if you have already collected enough candidates from prior queries (25+ candidates = proceed to scoring). If yes, skip the rate-limited query and note the gap. If not, wait 60 seconds and retry once. If still 429, fall back to WebSearch for that specific query only. Log every 429 in the scouting report with the query that triggered it.
+3. **Prioritize high-value queries first.** Fire tracked account `from:` searches (Stage D) first, then Viral Discovery (Stage E), then territory queries (Stage C), then zeitgeist (Stage B). If rate limits hit late, only low-priority broad queries are lost.
 
 **Monthly budget awareness:**
 
-Rate limits (per-15-minute) and billing (monthly post consumption) are separate. Each search query returns posts that count toward the monthly read budget. To conserve monthly budget without sacrificing signal:
+Rate limits (per-15-minute) and billing (monthly post consumption) are separate. Each search query returns posts that count toward the monthly read budget. Balance coverage against budget:
 
-- **Zeitgeist discovery queries (Stage B):** Use `max_results=10`. We only need the top stories to identify dominant conversations, not 100 results per query.
-- **Territory baseline queries (Stage C):** Use `max_results=25`. Wider net than zeitgeist but still conservative.
-- **Reactive queries (Stage C):** Use `max_results=50`. These are the highest-signal queries informed by Slack context and zeitgeist - worth pulling more candidates.
-- **Tracked account `from:` queries (Stage D):** Use `max_results=10`. Small and targeted — we only need to see their recent posts, not their full history.
+- **Tracked account `from:` queries (Stage D):** Use `count=10`. Small and targeted.
+- **Viral Discovery queries (Stage E):** Use `count=50`. These are the highest-value queries - cast a wide net, filter post-retrieval by engagement.
+- **Territory queries (Stage C):** Use `count=25`. Focused but not wasteful.
+- **Zeitgeist discovery queries (Stage B):** Use `count=10`. We only need the top stories to identify dominant conversations.
+- **Reactive queries (Stage C):** Use `count=25`. Informed by Slack + zeitgeist.
 
 ---
 
 ## Scouting Method (Execute in This Order)
 
-The order matters. Each stage informs the next. **Fire Stage D (tracked account `from:` searches) immediately after Stage A, before Stage B — this ensures the highest-value queries run before any rate limit risk accumulates.**
+The order matters. Each stage informs the next. The pipeline has 5 stages. Stages D and E together should produce the majority of viable candidates. Stage C fills territory gaps. Stage B provides zeitgeist context. Stage A provides Slack signal.
+
+**Execution order:** A (Slack) → D (Tracked Accounts) → B (Zeitgeist) → E (Viral Discovery) → C (Territory + Reactive)
+
+**The goal is 30-50 candidates from diverse authors.** If after all stages you have fewer than 25 candidates, the scouting is too narrow. Expand queries or add tracked accounts before proceeding to scoring.
 
 ### Stage A: Slack Signal (What Is Mike Thinking About Today?)
 
@@ -189,71 +194,140 @@ Check these channels for today's activity (this list is modular - add new channe
 
 Filter for Mike's messages (user ID: U02BJAWG9). Note: other team members' shares are useful for topic discovery but Mike's own reactions and messages are the priority signal.
 
-**Output from this stage:** A list of 3-8 topics Mike is actively engaged with today. These become targeted search inputs for Stage B.
+**Output from this stage:** A list of 3-8 topics Mike is actively engaged with today. These become targeted search inputs for Stages B, C, and E.
+
+### Stage D: Tracked Accounts (Run FIRST - Before Any Other X Queries)
+
+Run `from:[handle]` searches for tracked accounts from `prompts/shared/x-ecosystem-setup.md`. These are pre-vetted accounts whose audiences overlap closely with Mike's target. **This is the largest single source of candidates and must run before rate limits accumulate.**
+
+**Query all Tier 1 AND Tier 2 accounts.** This is ~22 accounts. Fire in 3 parallel batches of 8, `count=10` each. Total: ~22 API calls.
+
+**Tier 3 (Discovery Pool):** Rotate 4-6 Tier 3 accounts per run. Pick accounts that have not been queried in the last 2 runs. Total: ~5 additional API calls.
+
+**Total Stage D budget: ~27 calls.**
+
+**How to run:**
+- Batch 1 (fire immediately): Tier 1 accounts (10 calls)
+- Batch 2 (fire after Batch 1): Tier 2 accounts (12 calls)
+- Batch 3 (fire after Batch 2): Tier 3 rotation (4-6 calls)
+
+**What to do with results:** Apply hard kills (brand check, freshness, dedup) and pass surviving posts to scoring. Annotate tracked account tier: "Author is tracked (Tier 1/2/3)."
+
+**If a `from:` query returns a 429:** Skip it, note the gap, and check whether the account's posts surfaced organically through later stages. Do not retry - move on.
+
+**After Stage D, count unique authors with viable candidates.** If fewer than 8 unique authors survived, flag it - later stages need to compensate.
 
 ### Stage B: X Zeitgeist Discovery (What Is the AI Ecosystem Talking About Right Now?)
 
-Before running territory-specific searches, discover what is actually trending in the AI conversation on X today. This prevents the scout from fishing in the same static pond every day.
+Discover what is trending in the AI conversation on X today. This informs Stage E (Viral Discovery) and Stage C (reactive queries).
 
-**Primary method (X Twitter MCP):**
-Use `search_tweets` to run zeitgeist discovery queries:
+**Primary method (X Twitter MCP) - 3 queries:**
 ```
-- "AI" (past 12 hours, sort by engagement) - broad sweep for today's dominant stories
-- "agents" OR "AI agents" (past 3 days) - what's the agent conversation today specifically
-- "AI announcement" OR "AI launch" OR "AI release" (past 3 days) - breaking product/model news
+- "AI" (count=10) - broad sweep for today's dominant stories
+- "AI agents" (count=10) - agent conversation specifically
+- "AI launch" OR "AI release" (count=10) - breaking product/model news
 ```
 
-**Fallback method (WebSearch - use only if X Twitter MCP is unavailable or rate-limited):**
-```
-- "AI" site:x.com (past 12 hours, sort by engagement)
-- "agents" OR "AI agents" site:x.com (past 3 days)
-- "AI announcement" OR "AI launch" OR "AI release" site:x.com (past 3 days)
-- Check trending topics related to AI/tech if available
-```
+**Total Stage B budget: 3 calls.**
 
 From these results, identify 3-5 dominant stories or conversations happening on X today. These are the zeitgeist topics. They may or may not overlap with Mike's Slack signal from Stage A.
 
-**The best reply targets sit at the intersection of what Mike is thinking about (Stage A) AND what X is talking about (Stage B).** Flag any intersection points - these are top-priority scouting leads.
+**The best reply targets sit at the intersection of what Mike is thinking about (Stage A) AND what X is talking about (Stage B).** Flag any intersection points - these are top-priority scouting leads for Stages C and E.
 
-### Stage C: Targeted Territory Searches (Mike's Semantic Lane)
+### Stage E: Viral Discovery (Find NEW Authors - The Diversity Engine)
 
-Now run territory-specific searches. Use a mix of the static baseline queries AND reactive queries informed by Stages A and B.
+**This stage is critical for author diversity.** Stages A-D fish in a known pond. Stage E finds high-engagement posts from authors Mike has never heard of. This is how the pipeline discovers fresh voices and avoids the same 10 people every run.
 
-**Baseline queries (run all via X Twitter MCP `search_tweets`):**
+**Method:** Search by TOPIC (not by author) with high result counts, then filter post-retrieval for engagement quality.
+
+**Viral Discovery queries (run all via `search_tweets`, `count=50` each):**
 ```
-- "AI agents production" OR "agents in production" (past 3 days)
-- "AI commerce" OR "AI shopping" OR "agentic commerce" (past 3 days)
-- "agent verification" OR "agent trust" OR "AI trust" (past 3 days)
-- "AI infrastructure" OR "AI operations" (past 3 days)
-- "agent reliability" OR "agent errors" OR "AI hallucination" (past 3 days)
-- "AI agent startup" OR "building AI agents" OR "shipping agents" (past 3 days)
-- "LLM production" OR "LLM deployment" OR "model serving" (past 3 days)
-- "AI product" OR "AI product management" OR "AI UX" (past 3 days)
-- "context engineering" OR "prompt engineering" OR "context window" (past 3 days)
-- "agentic workflow" OR "agent orchestration" OR "agent framework" (past 3 days)
+- "AI agents" (count=50) - broad agent conversation, filter for 50+ likes
+- "AI commerce" OR "AI shopping" (count=50) - commerce territory
+- "context engineering" (count=50) - active thematic current
+- "vibe coding" (count=50) - hot topic with operator angles
+- "LLM production" OR "AI production" (count=50) - operational AI
+- [1-2 reactive queries from Stage A/B zeitgeist topics] (count=50 each)
 ```
 
-**Fallback:** If X Twitter MCP is unavailable, append `site:x.com` to each query and run via WebSearch. Label all results as ESTIMATED.
+**Total Stage E budget: 6-8 calls.**
+
+**Post-retrieval engagement filter (MANDATORY):**
+After pulling results, apply this filter before passing to scoring:
+- **Minimum 20 likes** to survive. Below 20 = hard kill at scouting. Do not pass zero-engagement posts.
+- **Minimum 3 replies** preferred. Posts with 0 replies are low-priority (dead comment section = Mike's reply dies too).
+- Posts with 100+ likes from accounts with 10K+ followers are high-priority candidates regardless of other factors.
+
+**Author discovery protocol (self-improving tracked list):**
+For every post that passes the engagement filter, check: is this author already on the tracked accounts list? If NOT:
+- Note: "NEW AUTHOR - not on tracked list. @handle ([X]K followers). Post scored [engagement]. Consider for Tier 3."
+- New authors with 50+ likes on a territory-relevant post are exactly the kind of voices the pipeline needs for diversity.
+
+**Automatic Tier 3 additions:** At the end of every scouting run, any NEW author whose post:
+1. Passed the engagement filter (20+ likes), AND
+2. Scored 53+ in the scoring stage, AND
+3. Has 5K+ followers
+
+...gets automatically added to the Tier 3 Discovery Pool in `prompts/shared/x-ecosystem-setup.md` with their handle, follower count, topic, and discovery date. This happens every run - the tracked list grows organically.
+
+**Tier 3 → Tier 2 promotion:** During monthly review, any Tier 3 account that produced a target in 3+ briefs over the past month gets promoted to Tier 2 (queried every run instead of rotated).
+
+**Why this stage matters:** The tracked accounts list (Stage D) produces ~60% of candidates from ~25 known authors. Stage E should produce ~25% of candidates from potentially dozens of unknown authors. This is what prevents the "same 10 people" problem. The automatic Tier 3 addition ensures the pipeline gets smarter with every run - today's viral discovery is tomorrow's tracked account.
+
+### Stage C: Targeted Territory Searches (Fill Gaps + Reactive)
+
+Run territory-specific searches to fill any sub-territory gaps left by Stages D and E. Use SIMPLE queries - compound multi-word phrases return zero results on the X API.
+
+**Query design rules:**
+1. Keep queries to 1-2 words maximum. "AI agents" works. "AI agents production deployment" returns nothing.
+2. Use OR to combine related simple terms in a single query.
+3. Never use more than 3 OR-joined terms per query.
+
+**Baseline queries (run via `search_tweets`, `count=25` each):**
+```
+- "AI agents" (if not already run in Stage E)
+- "AI infrastructure"
+- "AI verification" OR "AI trust"
+- "agent framework"
+- "AI coding" OR "AI developer"
+- "LLM deployment"
+- "AI startup"
+```
 
 **Reactive queries (generate 3-5 based on Stages A and B):**
 Take the specific topics, people, products, or events from Stages A and B and build targeted searches. Examples:
-- If a major model dropped today: "[model name]" via `search_tweets` (past 3 days)
-- If Mike reacted to a specific company's announcement in Slack: "[company] AI" via `search_tweets` (past 3 days)
-- If a viral thread is happening around agent failures: "[specific topic from the thread]" via `search_tweets` (past 3 days)
+- If a major model dropped today: "[model name]" via `search_tweets`
+- If Mike reacted to a specific company's announcement in Slack: "[company] AI" via `search_tweets`
+- If a viral thread is happening around agent failures: "[specific failure topic]" via `search_tweets`
+- If a Tier 1 account posted something that generated a big thread: search the topic (not the author) to find other voices in the conversation
 
 Do not reuse yesterday's reactive queries. They must be fresh every run.
 
-### Stage D: Tracked Accounts (Small Targeted Batch)
+**Total Stage C budget: 7-12 calls.**
 
-Run `from:[handle]` searches for the highest-priority tracked accounts from `prompts/shared/x-ecosystem-setup.md`. These are pre-vetted accounts whose audiences overlap closely with Mike's target — a post from them that surfaces via keyword search may not be their best post from the last 72 hours.
+**Sub-territory gap check (run after Stage C):**
+Count candidates per sub-territory. If any of these has ZERO candidates, run one additional targeted query:
+- AI Commerce: "AI shopping" or "agentic commerce"
+- Agents in Production: "agent failure" or "AI production"
+- Trust/Verification: "AI verification" or "AI accuracy"
+- Agent Economics: "AI cost" or "agent pricing"
+- Operational AI: "AI infrastructure" or "AI scale"
+- Context Engineering: "context window" or "prompt engineering"
 
-**Which accounts to query:** Run `from:` searches only for Tier 1 accounts (top 6-8 highest-signal individuals). Do NOT run `from:` searches for brand accounts, media orgs, or Tier 3+ accounts. Typical Tier 1 examples: emollick, simonw, garrytan, swyx, karpathy, sama (check `x-ecosystem-setup.md` for current list).
+### Query Budget Summary
 
-**How to run:** Fire all Tier 1 `from:` queries as a single parallel batch (6-8 calls max, `max_results=10` each). Run this batch **first**, before Stage B zeitgeist queries, so that if rate limits hit later in the run these high-value queries are already done.
+| Stage | Purpose | Queries | Count per query |
+|-------|---------|---------|----------------|
+| D | Tracked accounts (Tier 1) | 10 | 10 |
+| D | Tracked accounts (Tier 2) | 12 | 10 |
+| D | Tracked accounts (Tier 3 rotation) | 4-6 | 10 |
+| B | Zeitgeist discovery | 3 | 10 |
+| E | Viral Discovery | 6-8 | 50 |
+| C | Territory baseline | 5-7 | 25 |
+| C | Reactive queries | 3-5 | 25 |
+| **Total** | | **~43-51** | |
 
-**What to do with results:** Apply the same hard kills (brand check, freshness, dedup) and pass surviving posts to scoring with the annotation: "Author is on tracked accounts list (Tier 1)." This is a positive scoring signal.
-
-**If a `from:` query returns a 429:** Skip it, note the gap, and check whether the account's posts surfaced organically through Stages B/C. Do not retry — move on to the next query.
+**If approaching 45 calls, cut from:** Stage C baseline queries first (least unique signal), then Stage B (zeitgeist is context, not candidates).
 
 ---
 
@@ -332,10 +406,11 @@ Structure all collected targets into a single document:
 **Total candidates collected:** [X]
 **Dedup exclusions:** [X] posts from previous briefs
 **Sources breakdown:**
-- Slack signal: [X] topics identified, [X] candidates sourced from Slack-informed searches
-- X zeitgeist: [X] dominant stories, [X] candidates from zeitgeist-informed searches
-- Territory baseline: [X] candidates from baseline queries
-- Tracked account annotations: [X] candidates flagged as tracked account authors
+- Stage A (Slack signal): [X] topics identified, [X] candidates sourced from Slack-informed searches
+- Stage D (Tracked accounts): [X] queries fired, [X] candidates from Tier 1, [X] from Tier 2, [X] from Tier 3
+- Stage B (Zeitgeist): [X] dominant stories identified
+- Stage E (Viral Discovery): [X] queries fired, [X] candidates found, [X] NEW authors discovered (not on tracked list)
+- Stage C (Territory + Reactive): [X] candidates from baseline, [X] from reactive queries
 **Sub-territory distribution:** [Count how many candidates map to each sub-territory. Flag if more than 40% map to any single sub-territory - that indicates the search was too narrow.]
 **Freshness distribution:** [X] under 24 hours, [X] 24-48 hours, [X] 48-72 hours (all Snowflake-validated)
 ```
@@ -348,16 +423,20 @@ If any source is unavailable:
 - **X Twitter MCP down or rate-limited:** Fall back to WebSearch with `site:x.com` queries. Label ALL data from WebSearch as ESTIMATED. Note the fallback in the scouting report header so the scoring engine knows the data confidence baseline is lower for this run.
 - **Both X Twitter MCP and WebSearch down:** Log the gap and proceed with Slack-sourced topics only. Note the degraded coverage in the scouting report.
 - **Slack MCP down:** Log the gap and proceed with X-sourced topics only. Note that Slack signal is missing for this run.
-- **Tracked accounts list not accessible:** No impact on scouting. The tracked account list is context-only - used for annotation, not dedicated searches.
+- **Tracked accounts list not accessible:** Fall back to the hardcoded Tier 1 handles (karpathy, emollick, garrytan, swyx, simonw, svpino, DrJimFan, mattshumer_, bindureddy, sama). This is a degraded run but not a failure.
 
 Log all source gaps in the scouting report. Do not halt for human input - continue with available sources.
 
 ## Parallel Execution
 
 Use subagents to parallelize independent scouting work:
-- Run Slack channel scans for all 5 channels in parallel.
-- Run X Twitter MCP search queries in parallel batches (Stage B zeitgeist queries together, Stage C baseline queries together, Stage C reactive queries together).
+- Run Slack channel scans for all 5 channels in parallel (Stage A).
+- Run Stage D tracked account `from:` queries in parallel batches of 8.
+- Run Stage E Viral Discovery queries in a single parallel batch (6-8 calls).
+- Run Stage C territory + reactive queries in a single parallel batch.
 - Follower verification via WebFetch can run in parallel for all borderline accounts.
+
+**Critical: Stage D must complete before Stage E fires.** Stage D results inform whether Stage E needs to compensate for author diversity gaps. All other stages can overlap where dependencies allow.
 
 ---
 
