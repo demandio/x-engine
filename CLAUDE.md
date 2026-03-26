@@ -149,6 +149,7 @@ Every Reply Engine run MUST include a compliance checklist at the top of the del
 8. **Sensitivity screen.** Strip all internal details: customer names, revenue, unreleased features, project codenames, competitor strategy, team data. When in doubt, flag for Dakota.
 9. **Pipeline compliance.** Every brief MUST include the Pipeline Compliance Check block. Every gate must be reported as passed, failed (with reason), or not applicable (with reason). No silent skips. A skipped gate is a failed gate. A failed gate makes the brief a draft, not a deliverable.
 10. **Conservative defaults.** When data is degraded, missing, or uncertain, the default is to kill the candidate - not to apply soft penalties and pass it through. ESTIMATED data + zero engagement = kill. UNVERIFIED follower count = -3 penalty. Missing dedup check = halt. The pipeline should fail loud and conservative, not quiet and permissive.
+11. **Author diversity is non-negotiable.** Maximum 1 target per author per brief. Maximum 2 appearances per author in any rolling 7-day window. No exceptions. No relaxation for narrow pools. No "but the conversations are different" overrides. If the pipeline cannot fill 5 unique-author targets, it is a pipeline failure - fix the scout, do not relax the cap. See `prompts/reply-engine/scoring.md` Author Concentration Check and Author Recency Check for full rules.
 
 ## Operator
 

@@ -163,9 +163,8 @@ In the output, add after the score line:
 
 1. Rank all candidates by total score.
 2. **Hard cutoff:** Anything below 48 (60% of max) is killed.
-3. **Soft cutoff:** Surface the top 10-15 candidates above the threshold.
-4. If fewer than 8 candidates pass, surface what passes. A slow news day produces fewer targets.
-5. If more than 15 pass, surface the top 15.
+3. **Always 5.** Surface exactly 5 targets. If more than 5 pass, surface only the top 5 by score. The rest are logged as "passed but not surfaced" for reference.
+4. **If fewer than 5 pass the 48-point threshold, this is a pipeline failure - not a valid brief.** The scout collects 30-50 candidates. If the scoring engine cannot find 5 that score 48+ from that pool, something upstream is broken (scout cast too narrow a net, scoring was miscalibrated, or the post-scoring gates killed too aggressively). Report the failure: "PIPELINE FAILURE: Only [X] of 5 required targets survived. [Diagnosis of what went wrong]." Do not deliver a sub-5 brief. Do not ship 3 targets and call it done.
 
 ---
 
@@ -175,18 +174,59 @@ After ranking and cutoff, review the full set of passing targets as a portfolio.
 
 **The check:** Group passing targets by the underlying conversation they enter (not just sub-territory, but the specific thematic area). For example, three targets about context windows, agent memory, and context engineering all enter the same thematic conversation even if they span different sub-territories.
 
-**Trigger:** If more than 3 passing targets enter the same thematic conversation, the brief is concentration-heavy.
+**Trigger:** If 3 or more of the top 5 targets enter the same thematic conversation, the brief is concentration-heavy. (At 5 targets, 2 sharing a theme is expected and fine. 3 of 5 is a problem.)
 
 **When triggered:**
 
-1. Flag the concentration in the scoring output: "Thematic concentration detected: [X] of [Y] passing targets enter the [theme] conversation."
-2. Review the killed candidates (those that scored 40-47, just below the cutoff) for the highest-scoring candidate from a DIFFERENT thematic area.
-3. If a viable swap exists (killed candidate scored 40+ and covers a different theme): recommend replacing the lowest-scoring target in the concentrated cluster with the rescued candidate. Present both options to Dakota: the original set and the diversified set.
-4. If no viable swap exists (no killed candidates from other themes scored above 40): proceed with the original set but note the concentration risk. The drafter and quality gate (Monotony Test) will catch repetition in the actual drafts, but Dakota should be aware the scouting pool was narrow this cycle.
+1. Flag the concentration in the scoring output: "Thematic concentration detected: [X] of 5 targets enter the [theme] conversation."
+2. Replace the lowest-scoring target in the concentrated cluster with the next highest-scoring candidate from the full passing pool (those that scored 48+ but were not in the top 5) that covers a DIFFERENT thematic area.
+3. If no replacement exists in the passing pool, check candidates that scored 40-47 from different thematic areas.
+4. If no viable swap exists at all: proceed with the original 5 but note the concentration risk. The brief must still ship 5 targets. Do not reduce the count to solve a concentration problem.
 
-**What this does NOT do:** It does not override individual scores. A target that scores 70/80 is not killed because it shares a theme with two other high scorers. The check suggests portfolio-level swaps, not individual penalties. Dakota makes the final call.
+**Why this matters:** Mike's X profile is the sum of all his replies. If 3 of 5 replies in a single day enter the same conversation, the algorithm clusters his profile too narrowly. The serendipity of varied topics builds the perception of range. Range builds authority.
 
-**Why this matters:** Mike's X profile is the sum of all his replies. If 5 of 9 replies in a single day enter the same conversation, the algorithm may cluster his profile too narrowly. The serendipity of varied topics is what builds the perception of range. Range builds authority.
+---
+
+## Author Concentration Check (Run After Thematic Concentration Check) - NON-NEGOTIABLE
+
+After the Thematic Concentration Check, review the passing targets for author clustering. This is the hardest rule in the pipeline. No exceptions. No relaxation. No "but the pool is narrow" overrides.
+
+**Hard cap: Maximum 1 target from any single author per brief. ZERO EXCEPTIONS.**
+
+Replying to the same person twice in one brief looks like fixation. It does not matter how good their posts are. It does not matter if the pool is narrow. It does not matter if the conversations are different. One author, one slot.
+
+**The check:** Group all passing targets by @handle. If any author has 2 or more targets in the top 5, the cap is triggered.
+
+**When triggered:**
+
+1. Rank all targets from the over-represented author by total score. Keep only the top 1. Remove all others from the top 5.
+2. Log each removal: "Author concentration kill: [Target title] by @[handle] (score: [X]/80) removed - already keeping 1 higher-scoring target from this author."
+3. Replace each removed target with the next highest-scoring candidate from the full passing pool (48+) or the 40-47 range that comes from a DIFFERENT author. The brief must stay at 5.
+4. If no replacements exist and the brief would drop below 5: this is a pipeline failure. Report: "PIPELINE FAILURE: Cannot fill 5 targets with unique authors. Scout must diversify the candidate pool." Do not ship a brief with duplicate authors. Do not relax the cap. Ever.
+
+**Interaction with Thematic Concentration Check:** Run the Thematic Concentration Check first, then the Author Concentration Check. If both checks trigger swaps, the Author Concentration Check takes priority - kill the author-concentrated targets first, then re-evaluate thematic concentration on the remaining set.
+
+---
+
+## Author Recency Check (Run After Author Concentration Check) - NON-NEGOTIABLE
+
+Before finalizing the top 5, check the `output/` folder for briefs from the last 7 days. Count how many times each author appeared as a target across all briefs in that window.
+
+**Hard cap: Maximum 2 appearances per author in any rolling 7-day window. ZERO EXCEPTIONS.**
+
+If an author has already appeared as a target in 2 briefs within the last 7 days, they are HARD BLOCKED from the current brief. Not penalized. Not adjusted. Blocked. Their candidates are removed from the pool entirely before scoring begins.
+
+If an author appeared in 1 brief within the last 7 days, apply a -5 penalty to their total score. This creates natural rotation by giving fresh voices a 5-point edge.
+
+**Rules:**
+- **0 appearances in last 7 days:** No penalty. Score as normal.
+- **1 appearance in last 7 days:** -5 penalty to total score. Can still pass if score is strong enough.
+- **2 appearances in last 7 days:** HARD BLOCK. Remove all candidates from this author before scoring. Do not score them. Do not apply soft penalties. They are ineligible for this run.
+
+**How to check:** Load all brief files from `output/` dated within the last 7 days. Extract every @handle that appeared as a target. Count appearances per author. Cross-reference against the current run's candidates.
+
+**Logging:** For every blocked author: "Author recency block: @[handle] appeared in [X] briefs in last 7 days ([list brief filenames]). HARD BLOCKED for this run."
+For every penalized author: "Author recency penalty: @[handle] appeared in [brief filename] on [date]. Score adjusted from [X] to [X-5]."
 
 ---
 
