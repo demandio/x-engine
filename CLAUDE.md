@@ -23,12 +23,12 @@ Files 1 and 2 are symlinked from the Ghost Engine. They are the single source of
 
 ### Reply Engine (Daily)
 
-When triggered (daily cron at 6 AM PST, or manual run), execute the full 4-stage pipeline autonomously:
+When Dakota says: **"Run the Reply Engine"** (or any variation), execute the full 4-stage pipeline:
 
 1. **Scout** - Read `prompts/reply-engine/scout.md`. Collect 30-50 candidate posts from X using X Twitter MCP (primary), WebSearch (fallback), and Slack context (via Slack MCP).
-2. **Score** - Read `prompts/reply-engine/scoring.md`. Score each candidate on 6 weighted dimensions. Hard cutoff at 48/80. Surface top 5 only.
+2. **Score** - Read `prompts/reply-engine/scoring.md`. Score each candidate on 6 weighted dimensions. Hard cutoff at 48/80. Surface top 10-15.
 3. **Draft** - Read `prompts/reply-engine/drafter.md`. Draft one reply per surviving target in Mike's voice. Run each through `prompts/shared/quality-gate-replies.md`.
-4. **Deliver** - Format output using `templates/reply-targets-daily.md`. Two-part structure: Part 1 (Scouting provenance), Part 2 (Targets for Mike). Post to Slack #x-engine-channel (C0AGXSW1X8A) as a threaded message.
+4. **Deliver** - Format output using `templates/reply-targets-daily.md`. Two-part structure: Part 1 (Scouting provenance for Dakota), Part 2 (Targets for Mike).
 
 **Slack channels to check** (via Slack MCP - this list is modular, add more as needed):
 - #ai-news (C04E0MPQFUL) - Mike's hot takes and link shares
@@ -39,11 +39,11 @@ When triggered (daily cron at 6 AM PST, or manual run), execute the full 4-stage
 
 **Mike's Slack user ID:** U02BJAWG9 (filter for his messages when scanning channels)
 
-**Default signal period:** Last 24 hours for Slack signals. 72 hours (hard cap) for X reply targets. All X post timestamps must be Snowflake-validated (see scout.md).
+**Default signal period:** Last 24 hours for Slack signals. Last 72 hours (default) / 7 days (hard cap) for X reply targets. All X post timestamps must be Snowflake-validated (see scout.md). Dakota can override these windows per run.
 
 ### Slack-to-X Pipeline (On-Demand)
 
-When a Slack message is provided in this format:
+When Dakota pastes a Slack message in this format:
 
 ```
 Slack message from Mike:
@@ -57,18 +57,18 @@ Speed: [time-sensitive / normal]
 
 Execute the 4-stage pipeline:
 
-1. **Flag** - Message provided (already done via paste).
+1. **Flag** - Dakota provides the message (already done via paste).
 2. **Score** - Read `prompts/slack-to-x/scoring.md`. Score on 6 dimensions. Kill below 48/80.
 3. **Transform** - Read `prompts/slack-to-x/transform.md`. Convert internal message to public X post. Run through `prompts/shared/quality-gate-posts.md`.
 4. **Approve** - Format using `templates/slack-to-x-approval.md`. Present for Mike's review.
 
 ### Slack-to-X Daily Scan
 
-When triggered to **"Scan Slack for X-worthy messages"** (or any variation), search for Mike's messages across **all public Slack channels** from the last 48 hours using his Slack user ID (U02BJAWG9). Use `slack_search_public` with `from:<@U02BJAWG9>` to find messages across all channels - do not limit to the 5 primary channels listed above. Mike drops insights in threads, side channels, and conversations that are not on the primary list. For each message that looks like it could be a public post, run it through the Slack-to-X scoring engine. Surface any that score 48+.
+When Dakota says: **"Scan Slack for X-worthy messages"** (or any variation), search for Mike's messages across **all public Slack channels** from the last 24 hours using his Slack user ID (U02BJAWG9). Use `slack_search_public` with `from:<@U02BJAWG9>` to find messages across all channels - do not limit to the 5 primary channels listed above. Mike drops insights in threads, side channels, and conversations that are not on the primary list. For each message that looks like it could be a public post, run it through the Slack-to-X scoring engine. Surface any that score 48+.
 
 ### Thematic Scan (Bi-Weekly)
 
-When triggered to **"Run the Thematic Scan"** (or any variation), execute the Layer 2 context generator:
+When Dakota says: **"Run the Thematic Scan"** (or any variation), execute the Layer 2 context generator:
 
 1. **Scan** - Read `prompts/slack-to-x/thematic-scan.md`. Pull Mike's Slack messages from the past 30-60 days across all public channels.
 2. **Cluster** - Identify thematic clusters (topics Mike has returned to 3+ times across different conversations).
@@ -114,7 +114,7 @@ x-engine/
 
 ## Pipeline Compliance (Every Run)
 
-Every Reply Engine run MUST include a compliance checklist at the top of the delivered brief. This is not optional. If a gate was skipped, the checklist makes it visible immediately rather than buried in the output.
+Every Reply Engine run MUST include a compliance checklist at the top of the delivered brief. This is not optional. If a gate was skipped, the checklist makes it visible to Dakota immediately rather than buried in the output.
 
 **Required compliance block (include at top of every brief, before any targets):**
 
@@ -131,7 +131,7 @@ Every Reply Engine run MUST include a compliance checklist at the top of the del
 - [ ] Scoring input validation: Dedup proof block present [YES / NO], Follower log present [YES / NO]
 ```
 
-**If any gate shows NO or FAILED:** The brief is flagged as a draft in the Slack delivery. A brief with failed gates is a draft, not a deliverable.
+**If any gate shows NO or FAILED:** Dakota reviews before the brief goes to Mike. A brief with failed gates is a draft, not a deliverable.
 
 **The agent must never silently skip a gate.** If a gate cannot be completed (API down, files missing, WebFetch blocked), the correct behavior is to report the failure in the compliance block and proceed with conservative defaults - not to skip the gate and produce output as if it passed.
 
@@ -146,22 +146,11 @@ Every Reply Engine run MUST include a compliance checklist at the top of the del
 5. **Territory lock.** Every reply target and every Slack-to-X post must map to Mike's semantic territory: AI commerce, agents in production, trust/verification, operational AI. Off-territory content dilutes the embedding gravity well.
 6. **The Gift Principle.** Every piece of content must deliver value to the reader. No agreement-only replies. No surface commentary. The reader must walk away with something.
 7. **Voice fidelity.** Mike's voice is The Diagnostic Peer. Inside the conversation, not above it. Names the mechanism. Active voice. Punchy. Binary. 1-4 sentences for replies.
-8. **Sensitivity screen.** Strip all internal details: customer names, revenue, unreleased features, project codenames, competitor strategy, team data. When in doubt, err on the side of caution and omit.
+8. **Sensitivity screen.** Strip all internal details: customer names, revenue, unreleased features, project codenames, competitor strategy, team data. When in doubt, flag for Dakota.
 9. **Pipeline compliance.** Every brief MUST include the Pipeline Compliance Check block. Every gate must be reported as passed, failed (with reason), or not applicable (with reason). No silent skips. A skipped gate is a failed gate. A failed gate makes the brief a draft, not a deliverable.
 10. **Conservative defaults.** When data is degraded, missing, or uncertain, the default is to kill the candidate - not to apply soft penalties and pass it through. ESTIMATED data + zero engagement = kill. UNVERIFIED follower count = -3 penalty. Missing dedup check = halt. The pipeline should fail loud and conservative, not quiet and permissive.
+11. **Author diversity is non-negotiable.** Maximum 1 target per author per brief. Maximum 2 appearances per author in any rolling 7-day window. No exceptions. No relaxation for narrow pools. No "but the conversations are different" overrides. If the pipeline cannot fill 5 unique-author targets, it is a pipeline failure - fix the scout, do not relax the cap. See `prompts/reply-engine/scoring.md` Author Concentration Check and Author Recency Check for full rules.
 
-## Automation
+## Operator
 
-**Mode:** Fully automated. No human approval required. The pipeline runs end-to-end autonomously.
-
-**Delivery Channel:** #x-engine-channel (C0AGXSW1X8A)
-
-**Delivery Format:** Thread-based Slack delivery:
-- **Parent message:** Summary with date, target count, kill rate, top 3 priority targets. Attach the full reply-brief .md file.
-- **Thread replies:** One reply per target with score, link, author, original post excerpt, suggested reply, pattern, and gift.
-
-**MCP Tools Available:**
-- `slack` - Channel reading, message posting, thread replies, file uploads
-- `x-twitter` - Tweet search, user lookup (primary scouting source)
-
-**Schedule:** Daily at 6 AM PST via cron. Mike reviews and posts from his phone.
+**Dakota Nunley** - Director of Content & Authority Strategy, Product.ai. Dakota runs this pipeline daily. Mike reviews and posts from his phone.

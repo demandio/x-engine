@@ -1,6 +1,6 @@
 # Reply Engine: Target Scoring Engine
 
-**Purpose:** Take raw reply target candidates from Stage 1 (scout.md output), score each on 6 dimensions, rank, cut, and output exactly 5 targets for Stage 3 (drafter.md).
+**Purpose:** Take raw reply target candidates from Stage 1 (scout.md output), score each on 6 dimensions, rank, cut, and output the top 10-15 targets for Stage 3 (drafter.md).
 
 **Dependencies:** Load `grounding/individual/mike-quoc-v2.md` and `grounding/universal-grounding.md` before scoring. Every score must map to Mike's semantic territory, voice, and operational authority. Reference `prompts/shared/sensitivity-screen.md` for the three-tier editorial sensitivity classification.
 
@@ -28,9 +28,7 @@ Before scoring any candidates, validate that the scouting output meets minimum q
 
 **Check 3 - Snowflake timestamps:** Every candidate MUST have a Snowflake-decoded timestamp. Any candidate without one is returned to the scout for validation. Do not score candidates with unvalidated timestamps.
 
-**Check 4 - Brand account screen:** The scouting output MUST contain a `## BRAND ACCOUNT SCREEN` section. If missing, the scout did not screen for brand accounts. **Do not score.** Return the output to the scout with: "Scoring rejected: brand account screen proof block missing. Re-run scout with brand account screening." Additionally, every individual candidate MUST have an `**Account Type:**` field set to PERSON or BORDERLINE. Any candidate without this field is rejected - do not score it. Any candidate marked BORDERLINE receives a -2 penalty on the total score.
-
-If all four checks pass, proceed to scoring. If Check 1 or Check 4 (missing proof block) fails, halt entirely - return to scout. If Check 3 or Check 4 (individual candidate missing Account Type) fails for any individual candidate, reject that candidate (do not score it) but continue scoring the rest. Check 2 allows full progression with penalties applied to unverified accounts.
+If all three checks pass, proceed to scoring. If Check 1 fails, halt entirely - return to scout. If Check 3 fails for any individual candidate, reject that candidate (do not score it) but continue scoring the rest. Check 2 allows full progression with penalties applied to unverified accounts.
 
 ---
 
@@ -74,7 +72,7 @@ Is this the right account to engage with - and is THIS SPECIFIC POST generating 
 | 3-4 | Under 5K followers (hard floor - should not reach scoring unless the post went viral). Or wrong audience entirely, dead comment sections, or reply section too crowded for visibility. |
 | 1-2 | High-follower account where engagement is bot-heavy, spam-heavy, or purely performative. Or sub-5K account with no viral signal that slipped past the scout. |
 
-**Scoring physics:** The goal is not just visibility - it is visibility with the RIGHT people. A substantive reply on a 50K-follower AI founder's post is worth more than a reply on a 1M-follower tech influencer's post where Mike's comment drowns in noise. However, do not over-penalize large accounts (200K-500K) when the audience is relevant (AI builders, founders, operators). Mike's name and credibility in the AI commerce space carry enough weight to earn engagement even in busier comment sections. Large-account replies also serve a networking function - they put Mike in front of high-value people he wouldn't reach through smaller accounts. The penalty should scale with audience irrelevance, not just raw follower count. **People vs. brand account:** If a brand/media/company account slipped past the scout's hard kill, apply it here. Kill the candidate and log it: "Brand account kill: @[handle] is a [media org / corporate brand] account. Not a valid reply target." If the account is borderline (a company account that posts original technical analysis written in first-person), apply a -2 scoring penalty and note it. The goal is for the final brief to be 5 people accounts, not 4 people + 1 brand.
+**Scoring physics:** The goal is not just visibility - it is visibility with the RIGHT people. A substantive reply on a 50K-follower AI founder's post is worth more than a reply on a 1M-follower tech influencer's post where Mike's comment drowns in noise. However, do not over-penalize large accounts (200K-500K) when the audience is relevant (AI builders, founders, operators). Mike's name and credibility in the AI commerce space carry enough weight to earn engagement even in busier comment sections. Large-account replies also serve a networking function - they put Mike in front of high-value people he wouldn't reach through smaller accounts. The penalty should scale with audience irrelevance, not just raw follower count.
 
 **Engagement validation (new):** Do not score Account Quality based on follower count alone. A 100K-follower account with dead comment sections scores lower than a 30K-follower account with active, substantive reply threads. Check the SPECIFIC POST's reply quality:
 - Are replies multi-sentence and building on the original argument? (Good)
@@ -86,17 +84,17 @@ When available, note the engagement quality in the scoring output. This is a sig
 
 ### Dimension 4: Post Freshness (Weight: 1x)
 
-How fresh is this conversation? All timestamps MUST be Snowflake-validated before scoring. The scout enforces a hard 72-hour cutoff and provides decoded timestamps for every candidate.
+How fresh is this conversation? All timestamps MUST be Snowflake-validated before scoring. The scout enforces a hard 7-day cutoff and provides decoded timestamps for every candidate.
 
 | Score | Criteria |
 |-------|----------|
 | 9-10 | Posted within 12 hours. Conversation just starting. Mike's reply will be near the top. Maximum visibility window. |
 | 7-8 | Posted within 24 hours. Conversation active. Mike's reply lands in the growth window. |
-| 5-6 | Posted 24-48 hours ago. Conversation may still be active. Check reply section - if new replies are still coming in, conversation is alive. Score 6 if active, 5 if slowing. |
-| 3-4 | Posted 48-72 hours ago. Late entry. Cap at 4 regardless of activity. Only viable if the conversation is still generating new replies or if a news event has reignited the topic. These are backfill candidates - prioritize fresher targets. |
-| 1-2 | Over 72 hours. Should not reach scoring under normal operation (scout enforces 72-hour hard cutoff). If present, score 1 and flag the scout for review. Posts over 72 hours should almost never survive the 48-point threshold. |
+| 5-6 | Posted 24-72 hours ago. Conversation may still be active. Check reply section - if new replies are still coming in, conversation is alive. Score 6 if active, 5 if slowing. |
+| 3-4 | Posted 3-7 days ago. Late entry. Only viable if the conversation is still generating new replies or if a news event has reignited the topic. These are backfill candidates - prioritize fresher targets. |
+| 1-2 | Over 7 days. Should not reach scoring under normal operation. If present, score 1 and flag the scout for review. |
 
-**Scoring physics:** Reply visibility decays with age, but the decay curve is not linear. A post at 48 hours with an active reply section can have better visibility than a post at 6 hours with a dead comment section. The key signal is whether new replies are still arriving - that indicates the algorithm is still surfacing the post. Fresher is better, but conversation activity matters more than raw age within the 72-hour window.
+**Scoring physics:** Reply visibility decays with age, but the decay curve is not linear. A post at 48 hours with an active reply section can have better visibility than a post at 6 hours with a dead comment section. The key signal is whether new replies are still arriving - that indicates the algorithm is still surfacing the post. Fresher is better, but conversation activity matters more than raw age within the 7-day window.
 
 **Snowflake validation:** The scout provides exact decoded timestamps for every candidate. If a candidate arrives without a Snowflake-decoded timestamp, do not score it - return it to the scout for validation.
 
@@ -189,34 +187,46 @@ After ranking and cutoff, review the full set of passing targets as a portfolio.
 
 ---
 
-## Author Concentration Check (Run After Thematic Concentration Check)
+## Author Concentration Check (Run After Thematic Concentration Check) - NON-NEGOTIABLE
 
-After the Thematic Concentration Check, review the passing targets for author clustering. This prevents the brief from becoming a multi-reply thread on one person's posts - even if every target scores well individually, replying to the same author 3+ times in a single day looks like fixation, not strategy.
+After the Thematic Concentration Check, review the passing targets for author clustering. This is the hardest rule in the pipeline. No exceptions. No relaxation. No "but the pool is narrow" overrides.
 
-**Hard cap:** Maximum 2 targets from any single author per brief. No exceptions.
+**Hard cap: Maximum 1 target from any single author per brief. ZERO EXCEPTIONS.**
 
-**The check:** Group all passing targets by @handle. If any author has 3 or more targets in the passing set, the cap is triggered.
+Replying to the same person twice in one brief looks like fixation. It does not matter how good their posts are. It does not matter if the pool is narrow. It does not matter if the conversations are different. One author, one slot.
+
+**The check:** Group all passing targets by @handle. If any author has 2 or more targets in the top 5, the cap is triggered.
 
 **When triggered:**
 
-1. Rank all targets from the over-represented author by total score. Keep the top 2. Remove the rest from the top 5.
-2. Log each removal: "Author concentration swap: [Target title] by @[handle] (score: [X]/80) removed - already keeping 2 higher-scoring targets from this author."
+1. Rank all targets from the over-represented author by total score. Keep only the top 1. Remove all others from the top 5.
+2. Log each removal: "Author concentration kill: [Target title] by @[handle] (score: [X]/80) removed - already keeping 1 higher-scoring target from this author."
 3. Replace each removed target with the next highest-scoring candidate from the full passing pool (48+) or the 40-47 range that comes from a DIFFERENT author. The brief must stay at 5.
-4. If no replacements exist: proceed with the original 5 including the author-concentrated targets. A 5-target brief with author overlap is better than a 4-target brief without it. The brief must always ship 5.
+4. If no replacements exist and the brief would drop below 5: this is a pipeline failure. Report: "PIPELINE FAILURE: Cannot fill 5 targets with unique authors. Scout must diversify the candidate pool." Do not ship a brief with duplicate authors. Do not relax the cap. Ever.
 
 **Interaction with Thematic Concentration Check:** Run the Thematic Concentration Check first, then the Author Concentration Check. If both checks trigger swaps, the Author Concentration Check takes priority - kill the author-concentrated targets first, then re-evaluate thematic concentration on the remaining set.
 
 ---
 
-## Author Recency Check (Run After Author Concentration Check)
+## Author Recency Check (Run After Author Concentration Check) - NON-NEGOTIABLE
 
-Before finalizing the top 5, check the `output/` folder for briefs from the last 7 days. If an author appeared as a target in any brief from the past 7 days, apply a -5 penalty to their total score in the current run.
+Before finalizing the top 5, check the `output/` folder for briefs from the last 7 days. Count how many times each author appeared as a target across all briefs in that window.
 
-This is not a hard kill. If @sama posts something exceptional that scores 65/80 and appeared in Tuesday's brief, the -5 drops them to 60 - still well above the 48 cutoff. But a repeat author scoring 52 drops to 47 and dies. The penalty creates natural rotation by giving fresh voices a 5-point edge over repeat authors.
+**Hard cap: Maximum 2 appearances per author in any rolling 7-day window. ZERO EXCEPTIONS.**
 
-**How to check:** Load all brief files from `output/` dated within the last 7 days. Extract every @handle that appeared as a target. Cross-reference against the current run's passing candidates. Apply the -5 to any match.
+If an author has already appeared as a target in 2 briefs within the last 7 days, they are HARD BLOCKED from the current brief. Not penalized. Not adjusted. Blocked. Their candidates are removed from the pool entirely before scoring begins.
 
-**Logging:** For every penalized author, note in the scoring output: "Author recency penalty: @[handle] appeared in [brief filename] on [date]. Score adjusted from [X] to [X-5]."
+If an author appeared in 1 brief within the last 7 days, apply a -5 penalty to their total score. This creates natural rotation by giving fresh voices a 5-point edge.
+
+**Rules:**
+- **0 appearances in last 7 days:** No penalty. Score as normal.
+- **1 appearance in last 7 days:** -5 penalty to total score. Can still pass if score is strong enough.
+- **2 appearances in last 7 days:** HARD BLOCK. Remove all candidates from this author before scoring. Do not score them. Do not apply soft penalties. They are ineligible for this run.
+
+**How to check:** Load all brief files from `output/` dated within the last 7 days. Extract every @handle that appeared as a target. Count appearances per author. Cross-reference against the current run's candidates.
+
+**Logging:** For every blocked author: "Author recency block: @[handle] appeared in [X] briefs in last 7 days ([list brief filenames]). HARD BLOCKED for this run."
+For every penalized author: "Author recency penalty: @[handle] appeared in [brief filename] on [date]. Score adjusted from [X] to [X-5]."
 
 ---
 
@@ -259,8 +269,6 @@ After all targets, output the Scouting Quality Report:
 **Killed (below 48):** [X]
 **Territory distribution:** [Breakdown by topic area]
 **Account size distribution:** [Breakdown by follower range]
-**Author concentration:** [X unique authors across Y targets. Any author cap kills: list @handles and kill count, or "None"]
-**Repeat authors penalized:** [X] of [Y] passing candidates had appeared in briefs from the last 7 days
 **Freshness distribution:** [How many under 6hrs, 6-12hrs, 12-24hrs]
 ```
 
@@ -315,12 +323,6 @@ Use these examples to calibrate your scoring. Adjust based on Mike's actual appr
 | **Total** | **33/80** | Below 48 threshold. Kill. |
 
 **Kill reason:** Off-territory (pure benchmarking), conversation saturated, too old, reply section too crowded. Mike's time is better spent elsewhere.
-
----
-
-## Parallel Execution
-
-Score candidates in parallel batches of 5-8 using subagents. Each batch can be scored independently since scoring dimensions are evaluated per-candidate. Combine results after all batches complete, then run the Thematic Concentration Check on the full ranked set.
 
 ---
 
