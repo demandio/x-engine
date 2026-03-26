@@ -2,7 +2,7 @@
 
 **Purpose:** Output template for the daily Reply Engine brief. Two audiences, two parts.
 
-**Part 1 (The Scouting):** Full provenance for audit. Every target collected, every score applied, every kill/pass decision.
+**Part 1 (The Scouting):** Full provenance for Dakota. Every target collected, every score applied, every kill/pass decision.
 
 **Part 2 (The Targets):** Mike's action items. Scannable from phone. Each target is self-contained.
 
@@ -14,7 +14,7 @@
 # Reply Engine: Daily Brief
 **Run date:** [Date]
 **Signal period:** [Last 24 hours / specific range]
-**Mode:** Fully automated
+**Operator:** Dakota Nunley
 **Targets surfaced:** [X] of [Y] candidates scored
 
 ---
@@ -57,7 +57,7 @@ Data confidence baseline: [VERIFIED (X Twitter MCP available) / MIXED (partial f
 
 # PART 2: THE TARGETS (Mike's Reply Brief)
 
-Mike: [X] reply targets below. Each has the original post, why it is worth your time, and a suggested reply draft. Edit, rewrite, or skip. Goal: 5-8 replies across 2-3 sessions today.
+Mike: [X] reply targets below. Each has the original post, why it is worth your time, and 3 reply options from different angles. Dakota selects the best option for each target. Edit, rewrite, or skip. Goal: 3-5 replies across 1-2 sessions today.
 
 ---
 
@@ -71,29 +71,22 @@ Mike: [X] reply targets below. Each has the original post, why it is worth your 
 
 **Why reply:** [1-2 sentences: what gap exists in the replies that Mike can fill]
 
-**Suggested reply:**
-> [The drafted reply - ready to copy, edit, or rewrite]
+**Option A (Operator):**
+> [Reply from Mike's direct building/operational experience]
 
-**Pattern:** [Reframe / Binary Reduction / Contextual Wedge / Builder's Aside / Short Punch / Contrarian Redirect]
-**Gift:** [What the reader gets]
+**Pattern:** [Pattern name] | **Gift:** [What the reader gets]
 
----
+**Option B (Strategist):**
+> [Reply from the broader ecosystem/leadership/market perspective]
 
-## Target 2: "[One-line description]"
-**Score:** [Total] / 80
-**Link:** [Direct URL to the tweet]
-**@[handle]** ([X]K followers) - Posted [YYYY-MM-DD HH:MM UTC] ([X] hours ago)
+**Pattern:** [Pattern name] | **Gift:** [What the reader gets]
 
-**Post:**
-> [Full text of the original post]
+**Option C (Human):**
+> [Reply from Mike's personal/philosophical perspective]
 
-**Why reply:** [1-2 sentences]
+**Pattern:** [Pattern name] | **Gift:** [What the reader gets]
 
-**Suggested reply:**
-> [The drafted reply]
-
-**Pattern:** [Pattern name]
-**Gift:** [What the reader gets]
+**Quality Gate:** All 3 options PASS | **Sensitivity:** [GREEN / YELLOW / RED]
 
 ---
 
@@ -112,10 +105,10 @@ Mike: [X] reply targets below. Each has the original post, why it is worth your 
 
 ## Delivery Notes
 
-- Part 1 (The Scouting) is for operator review. It proves the engine's work and makes every decision auditable.
-- Part 2 (The Targets) is for Mike's reply sessions. Post to Slack #x-engine-channel (C0AGXSW1X8A) as threaded messages.
+- Part 1 (The Scouting) is for Dakota's operator review. It proves the engine's work and makes every decision auditable.
+- Part 2 (The Targets) is for Mike's reply sessions. Deliver the full brief to Notion. Post a summary to Slack with target count and the top 3 targets.
 - Mike picks targets, edits or rewrites the suggested replies, and posts from his phone.
-- The system tracks which targets Mike engaged with vs. skipped to calibrate the scoring engine over time.
+- Dakota tracks which targets Mike engaged with vs. skipped to calibrate the scoring engine over time.
 
 ---
 
